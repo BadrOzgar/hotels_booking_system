@@ -1,0 +1,202 @@
+import Link from "next/link";
+import {
+  Waves,
+  Utensils,
+  Flower2,
+  Dumbbell,
+  Wifi,
+  SquareParking,
+  Star,
+  ArrowRight,
+  Plus,
+} from "lucide-react";
+import { Hero } from "@/components/meridian/hero";
+import { SearchCard } from "@/components/meridian/search-card";
+import { RoomCard } from "@/components/meridian/room-card";
+import { rooms, amenities, testimonials, faqs } from "@/lib/meridian-data";
+
+const amenityIcons = {
+  waves: Waves,
+  utensils: Utensils,
+  flower: Flower2,
+  dumbbell: Dumbbell,
+  wifi: Wifi,
+  parking: SquareParking,
+} as const;
+
+export default function LandingPage() {
+  const featured = rooms.slice(0, 3);
+
+  return (
+    <div className="fu mx-auto max-w-[1240px] px-8 pb-24">
+      <Hero />
+      <SearchCard />
+
+      {/* FEATURED ROOMS */}
+      <div className="pt-[88px]">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
+              Featured stays
+            </div>
+            <h2 className="mt-3 text-4xl font-extrabold tracking-[-.03em]">
+              Rooms designed to slow you down
+            </h2>
+          </div>
+          <Link
+            href="/rooms"
+            className="btns flex items-center gap-2 rounded-[13px] border border-[#E7E8EC] bg-white px-5 py-3 text-[14.5px] font-semibold text-[#1F2937]"
+          >
+            View all rooms <ArrowRight className="size-[17px]" />
+          </Link>
+        </div>
+        <div className="mt-9 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {featured.map((room) => (
+            <RoomCard key={room.id} room={room} />
+          ))}
+        </div>
+      </div>
+
+      {/* AMENITIES */}
+      <div className="pt-24">
+        <div className="text-center">
+          <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
+            The resort
+          </div>
+          <h2 className="mt-3 text-4xl font-extrabold tracking-[-.03em]">
+            Everything, within a barefoot walk
+          </h2>
+        </div>
+        <div className="mt-11 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {amenities.map((a) => {
+            const Icon = amenityIcons[a.icon];
+            return (
+              <div
+                key={a.label}
+                className="lift rounded-[20px] border border-[#E7E8EC] bg-white px-[18px] py-[26px] text-center"
+                style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+              >
+                <div
+                  className="mx-auto flex size-[52px] items-center justify-center rounded-[15px]"
+                  style={{ background: a.bg }}
+                >
+                  <Icon className="size-6" style={{ color: a.fg }} />
+                </div>
+                <div className="mt-3.5 text-[15px] font-semibold">{a.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* TESTIMONIALS */}
+      <div className="pt-24">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
+              Guest stories
+            </div>
+            <h2 className="mt-3 text-4xl font-extrabold tracking-[-.03em]">
+              Loved by 4,000+ travellers
+            </h2>
+          </div>
+          <div
+            className="flex items-center gap-2 rounded-2xl border border-[#E7E8EC] bg-white px-[18px] py-3"
+            style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+          >
+            <Star className="size-[18px] fill-[#F6D68A] text-[#F6D68A]" />
+            <span className="text-lg font-extrabold">4.9</span>
+            <span className="text-sm font-medium text-[#9CA3AF]">/ 5 average</span>
+          </div>
+        </div>
+        <div className="mt-9 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {testimonials.map((t) => (
+            <div
+              key={t.name}
+              className="rounded-[22px] border border-[#E7E8EC] bg-white p-7"
+              style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+            >
+              <div className="flex gap-[3px]">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="size-4 fill-[#F6D68A] text-[#F6D68A]" />
+                ))}
+              </div>
+              <p className="mt-4 text-[15.5px] leading-[1.6] text-[#374151]">{t.quote}</p>
+              <div className="mt-[22px] flex items-center gap-3">
+                <div className="size-[42px] rounded-full" style={{ background: t.gradient }} />
+                <div>
+                  <div className="text-[14.5px] font-bold">{t.name}</div>
+                  <div className="text-[13px] font-medium text-[#9CA3AF]">{t.place}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div className="grid grid-cols-1 gap-14 pt-24 md:grid-cols-[.8fr_1.2fr]">
+        <div>
+          <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
+            Good to know
+          </div>
+          <h2 className="mt-3 text-[38px] font-extrabold tracking-[-.03em]">
+            Questions,
+            <br />
+            answered
+          </h2>
+          <p className="mt-4 text-[15.5px] leading-[1.6] text-[#6B7280]">
+            Everything you need before you arrive. Still curious? Our front desk
+            replies within the hour.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          {faqs.map((f) => (
+            <div
+              key={f.q}
+              className="rounded-2xl border border-[#E7E8EC] bg-white px-6 py-[22px]"
+              style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-base font-semibold">{f.q}</span>
+                <Plus className="size-[19px] text-[#9CA3AF]" />
+              </div>
+              <p className="mt-3 text-[14.5px] leading-[1.6] text-[#6B7280]">{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div
+        className="relative mt-24 overflow-hidden rounded-[28px] px-8 py-16 text-center"
+        style={{
+          background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)",
+          boxShadow: "0 20px 50px rgba(124,140,248,.24)",
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(90% 120% at 80% 0%,rgba(255,255,255,.25),transparent 55%)",
+          }}
+        />
+        <div className="relative">
+          <h2 className="m-0 text-[44px] font-extrabold tracking-[-.03em] text-white">
+            Your table by the sea is ready
+          </h2>
+          <p className="mt-4 text-lg text-white/90">
+            Book direct for the best rate and a complimentary breakfast.
+          </p>
+          <Link
+            href="/rooms"
+            className="btns mt-[30px] inline-block rounded-[15px] bg-white px-8 py-4 text-base font-bold text-[#1F2937]"
+            style={{ boxShadow: "0 8px 24px rgba(16,24,40,.16)" }}
+          >
+            Check availability
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

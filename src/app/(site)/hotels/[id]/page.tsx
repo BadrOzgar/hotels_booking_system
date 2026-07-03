@@ -1,0 +1,91 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ChevronRight, MapPin, Star } from "lucide-react";
+import { RoomsBrowser } from "@/components/meridian/rooms-browser";
+import { getHotel, getHotelRooms, hotels } from "@/lib/meridian-data";
+
+export function generateStaticParams() {
+  return hotels.map((h) => ({ id: h.id }));
+}
+
+export default async function HotelDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const hotel = getHotel(id);
+  if (!hotel) notFound();
+
+  const hotelRooms = getHotelRooms(hotel.id);
+
+  return (
+    <div className="fu mx-auto max-w-[1240px] px-8 pt-10 pb-20">
+      <div className="flex items-center gap-2 text-[13.5px] font-medium text-[#9CA3AF]">
+        <Link href="/" className="navlink">Home</Link>
+        <ChevronRight className="size-[15px]" />
+        <Link href="/gallery" className="navlink">Gallery</Link>
+        <ChevronRight className="size-[15px]" />
+        <span className="text-[#6B7280]">{hotel.name}</span>
+      </div>
+
+      <div
+        className="relative mt-5 h-[280px] rounded-[22px]"
+        style={{ background: hotel.gradient, boxShadow: "0 10px 30px rgba(16,24,40,.08)" }}
+      >
+        {hotel.tag && (
+          <div
+            className="absolute top-4 left-4 rounded-full bg-white/94 px-3.5 py-2 text-[13px] font-bold text-[#1F2937]"
+            style={{ backdropFilter: "blur(6px)", boxShadow: "0 2px 8px rgba(16,24,40,.1)" }}
+          >
+            {hotel.tag}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="m-0 text-4xl font-extrabold tracking-[-.03em]">{hotel.name}</h1>
+          <div className="mt-2.5 flex items-center gap-1.5 text-[15px] font-medium text-[#6B7280]">
+            <MapPin className="size-4 text-[#9CA3AF]" />
+            {hotel.location}
+          </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            <Star className="size-4 fill-[#F6D68A] text-[#F6D68A]" />
+            <span className="text-sm font-bold">{hotel.rating}</span>
+            <span className="text-sm font-medium text-[#9CA3AF]">
+              &middot; {hotel.reviews} reviews
+            </span>
+          </div>
+          <p className="mt-3.5 max-w-[640px] text-[15px] leading-[1.6] text-[#6B7280]">
+            {hotel.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-2xl font-bold tracking-[-.02em]">
+          Rooms at {hotel.name}
+          <span className="ml-2.5 text-base font-semibold text-[#9CA3AF]">
+            ({hotelRooms.length})
+          </span>
+        </h2>
+        <div className="mt-6">
+          {hotelRooms.length > 0 ? (
+            <RoomsBrowser rooms={hotelRooms} />
+          ) : (
+            <div
+              className="rounded-[20px] border border-[#E7E8EC] bg-white px-6 py-16 text-center"
+              style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+            >
+              <p className="text-[15px] font-semibold text-[#374151]">No rooms listed yet</p>
+              <p className="mt-1.5 text-[13.5px] font-medium text-[#9CA3AF]">
+                Check back soon or browse our other hotels.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

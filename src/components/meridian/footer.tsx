@@ -1,0 +1,60 @@
+import Link from "next/link";
+import { Waves } from "lucide-react";
+
+export function Footer() {
+  return (
+    <footer className="mt-24 border-t border-[#ECEDF1] bg-white">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-8 pt-14 pb-10 sm:grid-cols-2 md:grid-cols-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex size-8 items-center justify-center rounded-[10px]"
+              style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)" }}
+            >
+              <Waves className="size-[18px] text-white" />
+            </div>
+            <span className="text-lg font-bold text-[#1F2937]">Meridian</span>
+          </div>
+          <p className="mt-4 max-w-[260px] text-sm leading-relaxed text-[#9CA3AF]">
+            A coastal retreat on Half Moon Bay. Designed for rest, light and the long view.
+          </p>
+        </div>
+        <div>
+          <div className="text-[13px] font-bold text-[#1F2937]">Hotel</div>
+          <div className="mt-4 flex flex-col gap-[11px] text-sm font-medium text-[#6B7280]">
+            <Link href="/rooms" className="navlink">Rooms</Link>
+            <Link href="/gallery" className="navlink">Gallery</Link>
+            <span className="navlink">Dining</span>
+            <span className="navlink">Spa</span>
+          </div>
+        </div>
+        <div>
+          <div className="text-[13px] font-bold text-[#1F2937]">Company</div>
+          <div className="mt-4 flex flex-col gap-[11px] text-sm font-medium text-[#6B7280]">
+            <Link href="/about" className="navlink">About</Link>
+            <span className="navlink">Careers</span>
+            <span className="navlink">Press</span>
+            <Link href="/login" className="navlink">Admin login</Link>
+          </div>
+        </div>
+        <div>
+          <div className="text-[13px] font-bold text-[#1F2937]">Contact</div>
+          <div className="mt-4 flex flex-col gap-[11px] text-sm font-medium text-[#6B7280]">
+            <span>1 Shoreline Dr</span>
+            <span>Half Moon Bay, CA</span>
+            <span>+1 (650) 555-0142</span>
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-[#F0F1F4]">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-8 py-[22px] text-[13px] font-medium text-[#9CA3AF]">
+          <span>&copy; {new Date().getFullYear()} Meridian Coastal Resort</span>
+          <span className="flex gap-[22px]">
+            <span className="navlink">Privacy</span>
+            <span className="navlink">Terms</span>
+          </span>
+        </div>
+      </div>
+    </footer>
+  );
+}
