@@ -1,7 +1,11 @@
 "use server";
 
 import { AuthError } from "next-auth";
-import { DEMO_EMAIL, DEMO_PASSWORD, signIn } from "@/lib/auth";
+import { signIn } from "@/lib/auth";
+
+// Matches the account created by prisma/seed.ts.
+const SEEDED_ADMIN_EMAIL = "admin@meridian.co";
+const SEEDED_ADMIN_PASSWORD = "admin12345";
 
 export async function authenticate(
   _prevState: string | undefined,
@@ -28,8 +32,8 @@ export async function authenticate(
 
 export async function continueWithGmail() {
   await signIn("credentials", {
-    email: DEMO_EMAIL,
-    password: DEMO_PASSWORD,
+    email: SEEDED_ADMIN_EMAIL,
+    password: SEEDED_ADMIN_PASSWORD,
     redirectTo: "/admin",
   });
 }

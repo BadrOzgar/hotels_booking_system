@@ -10,50 +10,183 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  GUEST
-  ADMIN
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+/// Exactly two kinds of logged-in user: the platform owner (sees every
+/// tenant) and a hotel owner (sees only their own hotel, enforced by
+/// Hotel.ownerId being 1:1).
+enum SystemRole {
+  SUPER_ADMIN
+  HOTEL_OWNER
+}
+
+enum HotelAccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum SubscriptionPlan {
+  TRIAL
+  BASIC
+  PRO
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
 }
 
 enum BookingStatus {
   PENDING
   CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
   CANCELLED
-  COMPLETED
 }
 
+enum BookingSource {
+  DIRECT
+  OTA
+  PHONE
+  WALK_IN
+}
+
+enum PaymentMethod {
+  CARD
+  PAY_AT_HOTEL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+}
+
+enum RoomUnitStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  HIDDEN
+}
+
+enum BedType {
+  KING
+  QUEEN
+  DOUBLE
+  TWIN
+  SOFA
+  BUNK
+}
+
+enum HousekeepingTaskType {
+  CLEANING
+  INSPECTION
+  TURNDOWN
+}
+
+enum HousekeepingStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CANCELLED
+}
+
+enum NotificationType {
+  BOOKING_NEW
+  BOOKING_CANCELLED
+  GUEST_MESSAGE
+  MAINTENANCE
+  SYSTEM
+}
+
+enum ContactTopic {
+  RESERVATION
+  EVENTS
+  DINING
+  OTHER
+}
+
+enum ContactStatus {
+  NEW
+  RESPONDED
+  CLOSED
+}
+
+// ============================================================================
+// IDENTITY & ACCESS
+// Auth.js (NextAuth) tables kept adapter-compatible. Ownership is flat: a
+// HOTEL_OWNER has exactly one Hotel (Hotel.ownerId is unique), a SUPER_ADMIN
+// has none and can see every tenant.
+// ============================================================================
+
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String     @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          Role      @default(GUEST)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  systemRole    SystemRole @default(HOTEL_OWNER)
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  bookings Booking[]
-  reviews  Review[]
+  accounts     Account[]
+  sessions     Session[]
+  guestProfile Guest?
+  ownedHotel   Hotel?
+
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
+  activityLogs           ActivityLog[]
+
+  reportedMaintenanceTickets MaintenanceTicket[]    @relation("MaintenanceReportedBy")
+  assignedMaintenanceTickets MaintenanceTicket[]    @relation("MaintenanceAssignedTo")
+  assignedHousekeepingTasks  HousekeepingTask[]     @relation("HousekeepingAssignedTo")
+  bookingStatusChanges       BookingStatusHistory[] @relation("BookingStatusChangedBy")
 
   @@map("users")
 }
 
 model Account {
-  id                       String  @id @default(cuid())
-  userId                   String
-  type                     String
-  provider                 String
-  providerAccountId        String
-  refresh_token            String? @db.Text
-  access_token             String? @db.Text
-  expires_at               Int?
-  token_type               String?
-  scope                    String?
-  id_token                 String? @db.Text
-  session_state            String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -81,83 +214,630 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-model Hotel {
-  id          String   @id @default(cuid())
-  name        String
-  description String   @db.Text
-  city        String
-  country     String
-  address     String
-  latitude    Float?
-  longitude   Float?
-  starRating  Int      @default(0)
-  images      String[]
-  amenities   String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ============================================================================
+// GUEST CRM
+// A Guest belongs to exactly one hotel (tenant-scoped — the same email can be
+// a guest at two different hotels without colliding, since the uniqueness
+// constraint is (hotelId, email), not email alone). userId is set only if
+// that guest later creates/links an account — this keeps the booking flow
+// account-optional, matching the current UI.
+// ============================================================================
 
-  rooms   Room[]
-  reviews Review[]
+model Guest {
+  id        String   @id @default(cuid())
+  hotelId   String
+  userId    String?  @unique
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hotel    Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings Booking[]
+
+  @@unique([hotelId, email])
+  @@index([hotelId])
+  @@map("guests")
+}
+
+// ============================================================================
+// ORGANIZATION & PROPERTY STRUCTURE
+// One hotel, one owner (Hotel.ownerId is unique — enforced at the DB level).
+// Amenities and images are normalized so both hotels and room types can
+// share the same amenity catalog without duplicating strings.
+// ============================================================================
+
+model Hotel {
+  id              String             @id @default(cuid())
+  ownerId         String             @unique
+  /// Short unique code used as the prefix for booking confirmation codes (e.g. "MRD").
+  code            String             @unique
+  name            String
+  description     String             @db.Text
+  city            String
+  country         String
+  address         String
+  latitude        Float?
+  longitude       Float?
+  starRating      Int                @default(0)
+  currency        String             @default("MAD")
+  checkInTime     String             @default("15:00")
+  checkOutTime    String             @default("11:00")
+  serviceFeeCents Int                @default(0)
+  taxRatePercent  Decimal            @default(0) @db.Decimal(5, 2)
+  /// Platform-level gate the Super Admin controls (separate from billing/Subscription).
+  accountStatus   HotelAccountStatus @default(ACTIVE)
+  /// Marketing badge shown on hotel cards (e.g. "Beachfront", "Mountain").
+  tag             String?
+  contactEmail    String?
+  contactPhone    String?
+  /// CSS gradient fallback used while no real photos have been uploaded yet.
+  gradient        String             @default("linear-gradient(135deg,#8FD3FE,#7C8CF8)")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  owner              User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  subscription       Subscription?
+  roomTypes          RoomType[]
+  roomUnits          RoomUnit[]
+  images             HotelImage[]
+  amenities          HotelAmenity[]
+  cancellationPolicy CancellationPolicy?
+  guests             Guest[]
+  bookings           Booking[]
+  reviews            Review[]
+  faqs               Faq[]
+  contactMessages    ContactMessage[]
+  integrations       Integration[]
+  dailyMetrics       DailyHotelMetrics[]
+  activityLogs       ActivityLog[]
 
   @@index([city, country])
   @@map("hotels")
 }
 
-model Room {
-  id           String   @id @default(cuid())
-  hotelId      String
-  name         String
-  description  String   @db.Text
-  pricePerNight Decimal @db.Decimal(10, 2)
-  capacity     Int      @default(2)
-  bedType      String?
-  sizeSqm      Int?
-  images       String[]
-  amenities    String[]
-  totalUnits   Int      @default(1)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model HotelImage {
+  id        String  @id @default(cuid())
+  hotelId   String
+  url       String
+  alt       String?
+  isCover   Boolean @default(false)
+  sortOrder Int     @default(0)
 
-  hotel    Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  hotel Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   @@index([hotelId])
-  @@map("rooms")
+  @@map("hotel_images")
 }
 
+/// Shared amenity catalog (e.g. "Free WiFi", "Ocean pool"). Reused by both
+/// hotels (property-level amenities) and room types (in-room amenities).
+model Amenity {
+  id    String  @id @default(cuid())
+  key   String  @unique
+  label String
+  icon  String?
+
+  hotels    HotelAmenity[]
+  roomTypes RoomTypeAmenity[]
+
+  @@map("amenities")
+}
+
+model HotelAmenity {
+  hotelId   String
+  amenityId String
+
+  hotel   Hotel   @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  amenity Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([hotelId, amenityId])
+  @@map("hotel_amenities")
+}
+
+/// One row per hotel, describing the default cancellation terms shown on the
+/// room detail page. Nullable relation means "use the platform default."
+model CancellationPolicy {
+  id                    String  @id @default(cuid())
+  hotelId               String  @unique
+  freeCancellationHours Int     @default(48)
+  penaltyNights         Int     @default(1)
+  description           String? @db.Text
+
+  hotel Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@map("cancellation_policies")
+}
+
+// ============================================================================
+// ROOM INVENTORY
+// RoomType is the sellable product guests browse and book (what "Tide Suite"
+// means, with its own price/photos/amenities). RoomUnit is the physical,
+// numbered room (e.g. #204) that housekeeping/maintenance track and that a
+// booking is ultimately assigned to. This split lets multiple physical rooms
+// share one bookable listing without duplicating its content.
+// ============================================================================
+
+model RoomType {
+  id                String   @id @default(cuid())
+  hotelId           String
+  name              String
+  /// Marketing category shown as a badge (e.g. "Suite", "Deluxe Loft", "Studio").
+  category          String   @default("Room")
+  description       String   @db.Text
+  basePricePerNight Decimal  @db.Decimal(10, 2)
+  capacity          Int      @default(2)
+  sizeSqm           Int?
+  bathrooms         Int      @default(1)
+  /// CSS gradient fallback used while no real photos have been uploaded yet.
+  gradient          String   @default("linear-gradient(135deg,#8FD3FE,#7C8CF8)")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  hotel     Hotel             @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  images    RoomTypeImage[]
+  amenities RoomTypeAmenity[]
+  beds      RoomTypeBed[]
+  units     RoomUnit[]
+  bookings  Booking[]
+  reviews   Review[]
+
+  @@index([hotelId])
+  @@map("room_types")
+}
+
+model RoomTypeImage {
+  id         String  @id @default(cuid())
+  roomTypeId String
+  url        String
+  alt        String?
+  isCover    Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@index([roomTypeId])
+  @@map("room_type_images")
+}
+
+model RoomTypeAmenity {
+  roomTypeId String
+  amenityId  String
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  amenity  Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([roomTypeId, amenityId])
+  @@map("room_type_amenities")
+}
+
+/// Normalized bed configuration (e.g. "1 King bed", "2 Queen beds") so the
+/// bed-type filter can query structured data instead of matching substrings
+/// in free text.
+model RoomTypeBed {
+  id         String  @id @default(cuid())
+  roomTypeId String
+  bedType    BedType
+  quantity   Int     @default(1)
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, bedType])
+  @@map("room_type_beds")
+}
+
+/// A physical, numbered room. Denormalizes hotelId so unit numbers can be
+/// validated unique per hotel and so operational queries (housekeeping,
+/// maintenance) don't need to join through RoomType.
+model RoomUnit {
+  id         String         @id @default(cuid())
+  hotelId    String
+  roomTypeId String
+  unitNumber String
+  floor      Int?
+  status     RoomUnitStatus @default(AVAILABLE)
+  notes      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  hotel              Hotel               @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomType           RoomType            @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  bookings           Booking[]
+  housekeepingTasks  HousekeepingTask[]
+  maintenanceTickets MaintenanceTicket[]
+
+  @@unique([hotelId, unitNumber])
+  @@index([roomTypeId])
+  @@index([status])
+  @@map("room_units")
+}
+
+// ============================================================================
+// BOOKINGS
+// Booking denormalizes hotelId (and snapshots guest contact info + pricing)
+// deliberately: at millions-of-rows scale, avoiding a join through
+// RoomUnit -> RoomType -> Hotel on every dashboard/list query is worth the
+// small amount of redundancy, and pricing snapshots protect historical
+// receipts from later price changes.
+// ============================================================================
+
 model Booking {
-  id          String        @id @default(cuid())
-  userId      String
-  roomId      String
-  checkIn     DateTime
-  checkOut    DateTime
-  guests      Int           @default(1)
-  totalPrice  Decimal       @db.Decimal(10, 2)
-  status      BookingStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id               String  @id @default(cuid())
+  /// Human-friendly reference shown in the UI, e.g. "MRD-4821".
+  confirmationCode String  @unique
+  hotelId          String
+  roomTypeId       String
+  /// Set once a specific physical room is assigned (may be null while PENDING).
+  roomUnitId       String?
+  guestId          String
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  contactFirstName String
+  contactLastName  String
+  contactEmail     String
+  contactPhone     String?
+  specialRequests  String? @db.Text
 
-  @@index([userId])
-  @@index([roomId])
-  @@index([checkIn, checkOut])
+  checkIn  DateTime
+  checkOut DateTime
+  nights   Int
+  adults   Int      @default(1)
+  children Int      @default(0)
+
+  status BookingStatus @default(PENDING)
+  source BookingSource @default(DIRECT)
+
+  baseAmount       Decimal @db.Decimal(10, 2)
+  serviceFeeAmount Decimal @default(0) @db.Decimal(10, 2)
+  taxAmount        Decimal @default(0) @db.Decimal(10, 2)
+  discountAmount   Decimal @default(0) @db.Decimal(10, 2)
+  totalAmount      Decimal @db.Decimal(10, 2)
+  currency         String  @default("MAD")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hotel    Hotel     @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  roomType RoomType  @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+  roomUnit RoomUnit? @relation(fields: [roomUnitId], references: [id], onDelete: SetNull)
+  guest    Guest     @relation(fields: [guestId], references: [id], onDelete: Restrict)
+
+  payments      Payment[]
+  invoice       Invoice?
+  review        Review?
+  statusHistory BookingStatusHistory[]
+  externalRef   ExternalBookingRef?
+
+  @@index([hotelId])
+  @@index([roomTypeId])
+  @@index([roomUnitId, checkIn, checkOut])
+  @@index([guestId])
+  @@index([status])
   @@map("bookings")
 }
 
+/// Audit trail for every status transition (Cancel / Check-in / Check-out in
+/// the admin UI), including who made the change.
+model BookingStatusHistory {
+  id              String         @id @default(cuid())
+  bookingId       String
+  fromStatus      BookingStatus?
+  toStatus        BookingStatus
+  changedByUserId String?
+  note            String?
+  createdAt       DateTime       @default(now())
+
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  changedBy User?   @relation("BookingStatusChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId])
+  @@map("booking_status_history")
+}
+
+// ============================================================================
+// PAYMENTS & INVOICING
+// A Booking can have several Payments (e.g. deposit + balance, or a refund),
+// and exactly one Invoice made of itemized InvoiceLineItems mirroring the
+// price breakdown shown on the booking/checkout screens.
+// ============================================================================
+
+model Payment {
+  id          String        @id @default(cuid())
+  bookingId   String
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  amount      Decimal       @db.Decimal(10, 2)
+  currency    String        @default("MAD")
+  provider    String?
+  providerRef String?
+  cardBrand   String?
+  cardLast4   String?
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("payments")
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  bookingId     String        @unique
+  invoiceNumber String        @unique
+  status        InvoiceStatus @default(DRAFT)
+  issuedAt      DateTime?
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  currency      String        @default("MAD")
+  createdAt     DateTime      @default(now())
+
+  booking   Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  lineItems InvoiceLineItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id         String  @id @default(cuid())
+  invoiceId  String
+  label      String
+  quantity   Int     @default(1)
+  unitAmount Decimal @db.Decimal(10, 2)
+  amount     Decimal @db.Decimal(10, 2)
+  sortOrder  Int     @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_line_items")
+}
+
+// ============================================================================
+// REVIEWS
+// A review always ties back to a completed Booking (one per booking) so it's
+// guaranteed to come from a verified stay. "Featured" reviews are what the
+// public site renders as testimonials — no separate testimonials table needed.
+// ============================================================================
+
 model Review {
-  id        String   @id @default(cuid())
+  id            String    @id @default(cuid())
+  bookingId     String    @unique
+  hotelId       String
+  roomTypeId    String?
+  rating        Int
+  title         String?
+  comment       String?   @db.Text
+  isFeatured    Boolean   @default(false)
+  hotelResponse String?   @db.Text
+  respondedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  hotel    Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomType RoomType? @relation(fields: [roomTypeId], references: [id], onDelete: SetNull)
+
+  @@index([hotelId])
+  @@index([isFeatured])
+  @@map("reviews")
+}
+
+// ============================================================================
+// OPERATIONS: HOUSEKEEPING & MAINTENANCE
+// ============================================================================
+
+model HousekeepingTask {
+  id               String               @id @default(cuid())
+  roomUnitId       String
+  assignedToUserId String?
+  type             HousekeepingTaskType @default(CLEANING)
+  status           HousekeepingStatus   @default(PENDING)
+  scheduledFor     DateTime?
+  completedAt      DateTime?
+  notes            String?
+  createdAt        DateTime             @default(now())
+
+  roomUnit   RoomUnit @relation(fields: [roomUnitId], references: [id], onDelete: Cascade)
+  assignedTo User?    @relation("HousekeepingAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@index([roomUnitId])
+  @@index([status])
+  @@map("housekeeping_tasks")
+}
+
+model MaintenanceTicket {
+  id               String              @id @default(cuid())
+  roomUnitId       String
+  reportedByUserId String?
+  assignedToUserId String?
+  title            String
+  description      String?             @db.Text
+  priority         MaintenancePriority @default(MEDIUM)
+  status           MaintenanceStatus   @default(OPEN)
+  resolvedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  roomUnit   RoomUnit @relation(fields: [roomUnitId], references: [id], onDelete: Cascade)
+  reportedBy User?    @relation("MaintenanceReportedBy", fields: [reportedByUserId], references: [id], onDelete: SetNull)
+  assignedTo User?    @relation("MaintenanceAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@index([roomUnitId])
+  @@index([status])
+  @@map("maintenance_tickets")
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// Backs the admin topbar bell dropdown and the Settings notification toggles.
+// ============================================================================
+
+model Notification {
+  id        String           @id @default(cuid())
   userId    String
-  hotelId   String
-  rating    Int
-  comment   String?  @db.Text
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  newBookings   Boolean  @default(true)
+  cancellations Boolean  @default(true)
+  guestMessages Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+// ============================================================================
+// CONTENT & CRM
+// ============================================================================
+
+/// hotelId null = platform-wide default FAQ shown when a hotel has none of
+/// its own (matches the current static FAQ section on the homepage).
+model Faq {
+  id        String   @id @default(cuid())
+  hotelId   String?
+  question  String
+  answer    String   @db.Text
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotel Hotel? @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@index([hotelId])
+  @@map("faqs")
+}
+
+/// Backs the /contact form. hotelId is nullable today (the form is
+/// platform-wide) but is ready for a future "contact this hotel" variant.
+model ContactMessage {
+  id        String        @id @default(cuid())
+  hotelId   String?
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  topic     ContactTopic  @default(OTHER)
+  message   String        @db.Text
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  hotel Hotel? @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+
+  @@index([hotelId])
+  @@index([status])
+  @@map("contact_messages")
+}
+
+// ============================================================================
+// INTEGRATIONS & ANALYTICS
+// Kept isolated so channel-manager/OTA sync or a future BI pipeline can be
+// added without touching the booking/payment core.
+// ============================================================================
+
+model Integration {
+  id        String   @id @default(cuid())
+  hotelId   String
+  provider  String
+  config    Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  hotel       Hotel                @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  bookingRefs ExternalBookingRef[]
+
+  @@index([hotelId])
+  @@map("integrations")
+}
+
+model ExternalBookingRef {
+  id            String   @id @default(cuid())
+  bookingId     String   @unique
+  integrationId String
+  externalId    String
+  rawPayload    Json?
+  syncedAt      DateTime @default(now())
+
+  booking     Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, externalId])
+  @@map("external_booking_refs")
+}
+
+/// Pre-aggregated daily rollup per hotel so admin dashboard/analytics reads
+/// stay fast at millions-of-bookings scale instead of aggregating raw
+/// Booking rows on every page load. Populated by a scheduled job.
+model DailyHotelMetrics {
+  id             String   @id @default(cuid())
+  hotelId        String
+  date           DateTime @db.Date
+  roomsAvailable Int
+  roomsOccupied  Int
+  revenue        Decimal  @db.Decimal(12, 2)
+  adr            Decimal  @db.Decimal(10, 2)
+  revpar         Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
+
   hotel Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, hotelId])
+  @@unique([hotelId, date])
+  @@map("daily_hotel_metrics")
+}
+
+// ============================================================================
+// SUBSCRIPTIONS & PLATFORM AUDIT
+// Subscription billing is simulated (no payment gateway) — the Super Admin
+// sets plan/status manually, same spirit as the simulated booking payments.
+// ============================================================================
+
+/// 1:1 with Hotel. Represents the tenant's billing plan/state, independent of
+/// Hotel.accountStatus (a hotel can be ACTIVE but PAST_DUE, for example).
+model Subscription {
+  id                 String             @id @default(cuid())
+  hotelId            String             @unique
+  plan               SubscriptionPlan   @default(TRIAL)
+  status             SubscriptionStatus @default(TRIALING)
+  currentPeriodStart DateTime           @default(now())
+  currentPeriodEnd   DateTime?
+  trialEndsAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  hotel Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+/// Generic audit trail. userId/hotelId are both nullable so platform-level
+/// events (e.g. a Super Admin action with no single hotel) can be logged too.
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  hotelId   String?
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  hotel Hotel? @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+
   @@index([hotelId])
-  @@map("reviews")
+  @@index([userId])
+  @@map("activity_logs")
 }

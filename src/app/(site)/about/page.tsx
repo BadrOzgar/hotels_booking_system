@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import {
   Compass,
@@ -8,7 +10,8 @@ import {
   Star,
   ArrowRight,
 } from "lucide-react";
-import { hotels, testimonials } from "@/lib/meridian-data";
+import { listHotels } from "@/lib/data/hotels";
+import { listFeaturedReviews } from "@/lib/data/content";
 
 const values = [
   {
@@ -55,12 +58,15 @@ const values = [
   },
 ];
 
-export default function AboutPage() {
-  const avgRating = (
-    hotels.reduce((sum, h) => sum + h.rating, 0) / hotels.length
-  ).toFixed(1);
-  const totalReviews = hotels.reduce((sum, h) => sum + h.reviews, 0);
-  const destinations = new Set(hotels.map((h) => h.location.split(",").pop()?.trim())).size;
+export default async function AboutPage() {
+  const [hotels, testimonials] = await Promise.all([listHotels(), listFeaturedReviews(3)]);
+
+  const ratedHotels = hotels.filter((h) => h.rating > 0);
+  const avgRating = ratedHotels.length
+    ? (ratedHotels.reduce((sum, h) => sum + h.rating, 0) / ratedHotels.length).toFixed(1)
+    : "—";
+  const totalReviews = hotels.reduce((sum, h) => sum + h.reviewCount, 0);
+  const destinations = new Set(hotels.map((h) => h.country)).size;
 
   const stats = [
     { label: "Hotels curated", value: `${hotels.length}` },
@@ -216,21 +222,33 @@ export default function AboutPage() {
           <div className="mt-9 grid grid-cols-1 gap-6 md:grid-cols-3">
             {testimonials.map((t) => (
               <div
-                key={t.name}
+                key={t.id}
                 className="rounded-[22px] border border-[#E7E8EC] bg-white p-7"
                 style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
               >
                 <div className="flex gap-[3px]">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="size-4 fill-[#F6D68A] text-[#F6D68A]" />
+                    <Star
+                      key={i}
+                      className="size-4"
+                      style={
+                        i < t.rating
+                          ? { fill: "#F6D68A", color: "#F6D68A" }
+                          : { fill: "none", color: "#E7E8EC" }
+                      }
+                    />
                   ))}
                 </div>
-                <p className="mt-4 text-[15.5px] leading-[1.6] text-[#374151]">{t.quote}</p>
+                <p className="mt-4 text-[15.5px] leading-[1.6] text-[#374151]">{t.comment}</p>
                 <div className="mt-[22px] flex items-center gap-3">
-                  <div className="size-[42px] rounded-full" style={{ background: t.gradient }} />
+                  <div className="size-[42px] rounded-full bg-[#7C8CF8]" />
                   <div>
-                    <div className="text-[14.5px] font-bold">{t.name}</div>
-                    <div className="text-[13px] font-medium text-[#9CA3AF]">{t.place}</div>
+                    <div className="text-[14.5px] font-bold">
+                      {t.booking.contactFirstName} {t.booking.contactLastName}
+                    </div>
+                    <div className="text-[13px] font-medium text-[#9CA3AF]">
+                      {t.hotel.city}, {t.hotel.country}
+                    </div>
                   </div>
                 </div>
               </div>

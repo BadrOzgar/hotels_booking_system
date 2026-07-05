@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { Star, Users, Maximize, BedDouble } from "lucide-react";
-import type { Room } from "@/lib/meridian-data";
+import { Star, Users, Maximize, BedDouble, MapPin } from "lucide-react";
+import type { PublicRoomListing } from "@/lib/data/room-types";
+import { formatCurrency } from "@/lib/pricing";
+import { coverStyle } from "@/lib/media";
 
-export function RoomRow({ room }: { room: Room }) {
+export function RoomRow({ room, searchParams = "" }: { room: PublicRoomListing; searchParams?: string }) {
   return (
     <div
       className="lift grid grid-cols-1 overflow-hidden rounded-[22px] border border-[#E7E8EC] bg-white sm:grid-cols-[300px_1fr]"
       style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
     >
-      <div className="relative min-h-[236px]" style={{ background: room.gradient }}>
+      <div className="relative min-h-[236px] bg-cover bg-center" style={coverStyle(room.coverImageUrl, room.gradient)}>
         {room.tag && (
           <div
             className="absolute top-3.5 left-3.5 rounded-full bg-white/94 px-3 py-1.5 text-xs font-bold text-[#1F2937]"
@@ -26,6 +28,10 @@ export function RoomRow({ room }: { room: Room }) {
               <span className="rounded-lg bg-[#F3F5FF] px-[9px] py-1 text-xs font-semibold text-[#7C8CF8]">
                 {room.type}
               </span>
+            </div>
+            <div className="mt-1.5 flex items-center gap-1.5 text-[13.5px] font-medium text-[#6B7280]">
+              <MapPin className="size-[14px] text-[#9CA3AF]" />
+              {room.hotel.name} &middot; {room.hotel.city}, {room.hotel.country}
             </div>
             <div className="mt-2 flex items-center gap-1.5">
               <Star className="size-[15px] fill-[#F6D68A] text-[#F6D68A]" />
@@ -53,18 +59,18 @@ export function RoomRow({ room }: { room: Room }) {
         </div>
         <div className="mt-auto flex items-end justify-between pt-5">
           <div>
-            <span className="text-[26px] font-extrabold tracking-[-.02em]">${room.price}</span>
+            <span className="text-[26px] font-extrabold tracking-[-.02em]">{formatCurrency(room.price)}</span>
             <span className="text-sm font-medium text-[#9CA3AF]"> / night</span>
           </div>
           <div className="flex gap-2.5">
             <Link
-              href={`/rooms/${room.id}`}
+              href={`/rooms/${room.id}${searchParams}`}
               className="btns rounded-[13px] border border-[#E7E8EC] bg-white px-5 py-3 text-[14.5px] font-semibold text-[#1F2937]"
             >
               Details
             </Link>
             <Link
-              href={`/booking/${room.id}`}
+              href={`/booking/${room.id}${searchParams}`}
               className="btnp rounded-[13px] px-[22px] py-3 text-[14.5px] font-semibold text-white"
               style={{ background: "#7C8CF8", boxShadow: "0 4px 14px rgba(124,140,248,.28)" }}
             >

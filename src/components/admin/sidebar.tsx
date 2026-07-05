@@ -17,7 +17,13 @@ import { logout } from "@/app/admin/actions";
 const active = { background: "#F3F5FF", color: "#4A5AE0", fontWeight: 600 };
 const inactive = { background: "transparent", color: "#6B7280", fontWeight: 500 };
 
-export function AdminSidebar({ pendingBookings }: { pendingBookings: number }) {
+export function AdminSidebar({
+  pendingBookings,
+  ownerName,
+}: {
+  pendingBookings: number;
+  ownerName: string;
+}) {
   const pathname = usePathname();
   const isDash = pathname === "/admin";
   const isRooms = pathname.startsWith("/admin/rooms");
@@ -25,6 +31,13 @@ export function AdminSidebar({ pendingBookings }: { pendingBookings: number }) {
   const isCalendar = pathname.startsWith("/admin/calendar");
   const isGuests = pathname.startsWith("/admin/guests");
   const isSettings = pathname.startsWith("/admin/settings");
+
+  const initials = ownerName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <aside className="sticky top-0 flex h-screen w-[250px] shrink-0 flex-col border-r border-[#ECEDF1] bg-white p-4">
@@ -117,11 +130,11 @@ export function AdminSidebar({ pendingBookings }: { pendingBookings: number }) {
             className="flex size-[38px] items-center justify-center rounded-full text-sm font-bold text-white"
             style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)" }}
           >
-            EM
+            {initials}
           </div>
           <div>
-            <div className="text-[13.5px] font-bold">Elena Marceau</div>
-            <div className="text-xs font-medium text-[#9CA3AF]">Manager</div>
+            <div className="text-[13.5px] font-bold">{ownerName}</div>
+            <div className="text-xs font-medium text-[#9CA3AF]">Hotel Owner</div>
           </div>
         </div>
       </div>

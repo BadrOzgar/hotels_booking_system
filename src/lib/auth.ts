@@ -4,16 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
-
-export const DEMO_EMAIL = "demo@meridian.co";
-export const DEMO_PASSWORD = "demo1234";
-
-const DEMO_USER = {
-  id: "demo-user",
-  name: "Demo Admin",
-  email: DEMO_EMAIL,
-  image: null,
-};
+import type { SystemRole } from "@/generated/prisma/enums";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -32,27 +23,46 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
 
-        if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-          return DEMO_USER;
-        }
-
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+          where: { email },
+          include: { ownedHotel: { select: { id: true, accountStatus: true } } },
+        });
         if (!user?.password) return null;
 
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) return null;
 
-        return { id: user.id, name: user.name, email: user.email, image: user.image };
+        // A suspended hotel account is fully locked out until reactivated by the Super Admin.
+        if (user.ownedHotel?.accountStatus === "SUSPENDED") return null;
+
+        await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          systemRole: user.systemRole,
+          hotelId: user.ownedHotel?.id ?? null,
+        };
       },
     }),
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.systemRole = user.systemRole;
+        token.hotelId = user.hotelId;
+      }
       return token;
     },
     session({ session, token }) {
-      if (session.user) session.user.id = token.id as string;
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.systemRole = token.systemRole as SystemRole;
+        session.user.hotelId = token.hotelId as string | null;
+      }
       return session;
     },
   },

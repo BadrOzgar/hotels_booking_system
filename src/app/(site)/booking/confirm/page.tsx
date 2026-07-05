@@ -1,18 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Download } from "lucide-react";
-import { getRoom, roomPricing } from "@/lib/meridian-data";
+import { getBookingByConfirmationCode } from "@/lib/data/bookings";
+import { formatCurrency } from "@/lib/pricing";
+
+function formatDateTime(d: Date) {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ", " +
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
 
 export default async function BookingConfirmPage({
   searchParams,
 }: {
-  searchParams: Promise<{ room?: string }>;
+  searchParams: Promise<{ booking?: string }>;
 }) {
-  const { room: roomId } = await searchParams;
-  const room = roomId ? getRoom(roomId) : undefined;
-  if (!room) notFound();
-
-  const { total } = roomPricing(room.price);
+  const { booking: confirmationCode } = await searchParams;
+  const booking = confirmationCode ? await getBookingByConfirmationCode(confirmationCode) : undefined;
+  if (!booking) notFound();
 
   return (
     <div className="fu mx-auto max-w-[620px] px-8 pt-[70px] pb-[90px] text-center">
@@ -25,10 +29,12 @@ export default async function BookingConfirmPage({
       >
         <Check className="size-11 text-white" strokeWidth={2.4} />
       </div>
-      <h1 className="mt-7 text-4xl font-extrabold tracking-[-.03em]">You&apos;re all set, Amara</h1>
+      <h1 className="mt-7 text-4xl font-extrabold tracking-[-.03em]">
+        You&apos;re all set, {booking.contactFirstName}
+      </h1>
       <p className="mt-3.5 text-[17px] leading-[1.6] text-[#6B7280]">
         Your reservation is confirmed. We&apos;ve sent the details and directions to{" "}
-        <span className="font-semibold text-[#1F2937]">amara@email.com</span>. We can&apos;t wait
+        <span className="font-semibold text-[#1F2937]">{booking.contactEmail}</span>. We can&apos;t wait
         to welcome you.
       </p>
 
@@ -40,28 +46,30 @@ export default async function BookingConfirmPage({
           <div className="text-[13px] font-semibold tracking-[.04em] text-[#9CA3AF] uppercase">
             Booking reference
           </div>
-          <div className="text-xl font-extrabold tracking-[.06em] text-[#7C8CF8]">MRD-4821</div>
+          <div className="text-xl font-extrabold tracking-[.06em] text-[#7C8CF8]">
+            {booking.confirmationCode}
+          </div>
         </div>
         <div className="my-[22px] h-px bg-[#F0F1F4]" />
         <div className="flex gap-4">
-          <div className="size-[88px] shrink-0 rounded-2xl" style={{ background: room.gradient }} />
+          <div className="size-[88px] shrink-0 rounded-2xl" style={{ background: booking.roomType.gradient }} />
           <div className="flex-1">
-            <div className="text-[19px] font-bold tracking-[-.02em]">{room.name}</div>
+            <div className="text-[19px] font-bold tracking-[-.02em]">{booking.roomType.name}</div>
             <div className="mt-[3px] text-[13.5px] font-medium text-[#9CA3AF]">
-              Meridian Coastal Resort &middot; Half Moon Bay
+              {booking.hotel.name} &middot; {booking.hotel.city}
             </div>
             <div className="mt-4 flex gap-6">
               <div>
                 <div className="text-xs font-semibold text-[#9CA3AF]">Check in</div>
-                <div className="mt-0.5 text-[15px] font-bold">Jun 12, 3:00 PM</div>
+                <div className="mt-0.5 text-[15px] font-bold">{formatDateTime(booking.checkIn)}</div>
               </div>
               <div>
                 <div className="text-xs font-semibold text-[#9CA3AF]">Check out</div>
-                <div className="mt-0.5 text-[15px] font-bold">Jun 15, 11:00 AM</div>
+                <div className="mt-0.5 text-[15px] font-bold">{formatDateTime(booking.checkOut)}</div>
               </div>
               <div>
                 <div className="text-xs font-semibold text-[#9CA3AF]">Total</div>
-                <div className="mt-0.5 text-[15px] font-bold">${total}</div>
+                <div className="mt-0.5 text-[15px] font-bold">{formatCurrency(Number(booking.totalAmount))}</div>
               </div>
             </div>
           </div>

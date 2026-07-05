@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Check, Star } from "lucide-react";
-import type { Room } from "@/lib/meridian-data";
+import type { PublicRoomListing } from "@/lib/data/room-types";
+import { formatCurrency } from "@/lib/pricing";
 import { RoomRow } from "./room-row";
 
 type Sort = "featured" | "low" | "high";
@@ -32,7 +33,7 @@ const defaultFilters: Filters = {
   minRating: null,
 };
 
-export function RoomsBrowser({ rooms }: { rooms: Room[] }) {
+export function RoomsBrowser({ rooms, searchParams = "" }: { rooms: PublicRoomListing[]; searchParams?: string }) {
   const [sort, setSort] = useState<Sort>("featured");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
 
@@ -102,7 +103,7 @@ export function RoomsBrowser({ rooms }: { rooms: Room[] }) {
         <FiltersSidebar filters={filters} onChange={setFilters} />
         <div className="flex flex-col gap-5">
           {sorted.length > 0 ? (
-            sorted.map((room) => <RoomRow key={room.id} room={room} />)
+            sorted.map((room) => <RoomRow key={room.id} room={room} searchParams={searchParams} />)
           ) : (
             <div
               className="rounded-[20px] border border-[#E7E8EC] bg-white px-6 py-16 text-center"
@@ -209,8 +210,8 @@ function FiltersSidebar({
           />
         </div>
         <div className="mt-3 flex justify-between text-[13px] font-semibold text-[#6B7280]">
-          <span>${filters.priceMin.toLocaleString()}</span>
-          <span>${filters.priceMax.toLocaleString()}</span>
+          <span>{formatCurrency(filters.priceMin)}</span>
+          <span>{formatCurrency(filters.priceMax)}</span>
         </div>
       </div>
 

@@ -1,37 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { LogIn, LogOut, X } from "lucide-react";
-import { bookingStatusTokens, type AdminBooking } from "@/lib/meridian-data";
+import { bookingStatusTokens, formatStatusLabel } from "@/lib/meridian-data";
+import { updateBookingStatusAction } from "@/app/admin/bookings/actions";
+import type { BookingStatus } from "@/generated/prisma/enums";
 
-export function BookingHeader({ booking }: { booking: AdminBooking }) {
-  const [status, setStatus] = useState<AdminBooking["status"]>(booking.status);
+export function BookingHeader({
+  bookingId,
+  confirmationCode,
+  status: initialStatus,
+}: {
+  bookingId: string;
+  confirmationCode: string;
+  status: BookingStatus;
+}) {
+  const router = useRouter();
+  const [status, setStatus] = useState<BookingStatus>(initialStatus);
+  const [pending, startTransition] = useTransition();
   const st = bookingStatusTokens[status];
 
-  const isCancelled = status === "Cancelled";
-  const isCheckedOut = status === "Checked out";
+  const isCancelled = status === "CANCELLED";
+  const isCheckedOut = status === "CHECKED_OUT";
+
+  function transition(next: BookingStatus) {
+    startTransition(async () => {
+      await updateBookingStatusAction(bookingId, next);
+      setStatus(next);
+      router.refresh();
+    });
+  }
 
   return (
     <div className="mt-[18px] flex flex-col items-start justify-between gap-4 sm:flex-row">
       <div>
         <div className="flex items-center gap-3">
-          <h1 className="m-0 text-[28px] font-extrabold tracking-[-.03em]">{booking.id}</h1>
+          <h1 className="m-0 text-[28px] font-extrabold tracking-[-.03em]">{confirmationCode}</h1>
           <span
             className="rounded-full border px-3 py-[5px] text-xs font-bold"
             style={{ color: st.c, background: st.bg, borderColor: st.bd }}
           >
-            {status}
+            {formatStatusLabel(status)}
           </span>
         </div>
-        <p className="mt-2 text-[14.5px] font-medium text-[#6B7280]">
-          Booked Jun 2, 2026 &middot; via direct website
-        </p>
       </div>
       <div className="flex gap-2.5">
         <button
           type="button"
-          disabled={isCancelled || isCheckedOut}
-          onClick={() => setStatus("Cancelled")}
+          disabled={pending || isCancelled || isCheckedOut}
+          onClick={() => transition("CANCELLED")}
           className="btns flex items-center gap-2 rounded-[13px] border border-[#F0D2D2] bg-white px-[18px] py-3 text-sm font-semibold text-[#D96A6A] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <X className="size-4" />
@@ -39,8 +57,8 @@ export function BookingHeader({ booking }: { booking: AdminBooking }) {
         </button>
         <button
           type="button"
-          disabled={isCancelled || isCheckedOut}
-          onClick={() => setStatus("Checked out")}
+          disabled={pending || isCancelled || isCheckedOut}
+          onClick={() => transition("CHECKED_OUT")}
           className="btns flex items-center gap-2 rounded-[13px] border border-[#E7E8EC] bg-white px-[18px] py-3 text-sm font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <LogOut className="size-[17px]" />
@@ -48,8 +66,8 @@ export function BookingHeader({ booking }: { booking: AdminBooking }) {
         </button>
         <button
           type="button"
-          disabled={isCancelled || status === "Checked in" || isCheckedOut}
-          onClick={() => setStatus("Checked in")}
+          disabled={pending || isCancelled || status === "CHECKED_IN" || isCheckedOut}
+          onClick={() => transition("CHECKED_IN")}
           className="btnp flex items-center gap-2 rounded-[13px] px-[22px] py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: "#7C8CF8", boxShadow: "0 6px 18px rgba(124,140,248,.3)" }}
         >

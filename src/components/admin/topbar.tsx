@@ -5,13 +5,17 @@ import Link from "next/link";
 import { Search, Bell, Plus, ChevronDown, LogOut, Globe } from "lucide-react";
 import { logout } from "@/app/admin/actions";
 
-const notifications = [
-  { title: "New booking from Sofie Lind", time: "12 min ago" },
-  { title: "Coral Room marked for maintenance", time: "1 hour ago" },
-  { title: "Daniel Reyes checked in", time: "3 hours ago" },
-];
-
-export function AdminTopbar() {
+export function AdminTopbar({
+  ownerName,
+  ownerEmail,
+  quickAddHref = "/admin/rooms",
+  notifications = [],
+}: {
+  ownerName: string;
+  ownerEmail: string;
+  quickAddHref?: string | null;
+  notifications?: { title: string; time: string }[];
+}) {
   const [openNotifications, setOpenNotifications] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -51,7 +55,9 @@ export function AdminTopbar() {
             className="relative flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#E7E8EC] bg-white"
           >
             <Bell className="size-[18px] text-[#6B7280]" />
-            <span className="absolute top-2.5 right-2.5 size-2 rounded-full border-2 border-white bg-[#F2A3A3]" />
+            {notifications.length > 0 && (
+              <span className="absolute top-2.5 right-2.5 size-2 rounded-full border-2 border-white bg-[#F2A3A3]" />
+            )}
           </button>
           {openNotifications && (
             <div
@@ -59,8 +65,13 @@ export function AdminTopbar() {
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.12)" }}
             >
               <div className="px-3 py-2 text-[13px] font-bold text-[#1F2937]">Notifications</div>
-              {notifications.map((n) => (
-                <div key={n.title} className="rowh rounded-xl px-3 py-2.5">
+              {notifications.length === 0 && (
+                <div className="px-3 py-4 text-center text-[13px] font-medium text-[#9CA3AF]">
+                  No notifications yet.
+                </div>
+              )}
+              {notifications.map((n, i) => (
+                <div key={i} className="rowh rounded-xl px-3 py-2.5">
                   <div className="text-[13.5px] font-semibold text-[#374151]">{n.title}</div>
                   <div className="mt-0.5 text-[12px] font-medium text-[#9CA3AF]">{n.time}</div>
                 </div>
@@ -68,13 +79,15 @@ export function AdminTopbar() {
             </div>
           )}
         </div>
-        <Link
-          href="/admin/rooms/new"
-          aria-label="Add new room"
-          className="flex size-10 items-center justify-center rounded-xl border border-[#E7E8EC] bg-white"
-        >
-          <Plus className="size-[18px] text-[#6B7280]" />
-        </Link>
+        {quickAddHref && (
+          <Link
+            href={quickAddHref}
+            aria-label="Manage rooms"
+            className="flex size-10 items-center justify-center rounded-xl border border-[#E7E8EC] bg-white"
+          >
+            <Plus className="size-[18px] text-[#6B7280]" />
+          </Link>
+        )}
         <div className="relative">
           <button
             type="button"
@@ -88,7 +101,12 @@ export function AdminTopbar() {
               className="flex size-[38px] items-center justify-center rounded-full text-sm font-bold text-white"
               style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)" }}
             >
-              EM
+              {ownerName
+                .split(" ")
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
             </div>
             <ChevronDown className="size-4 text-[#9CA3AF]" />
           </button>
@@ -98,8 +116,8 @@ export function AdminTopbar() {
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.12)" }}
             >
               <div className="px-3 py-2.5">
-                <div className="text-[13.5px] font-bold">Elena Marceau</div>
-                <div className="text-xs font-medium text-[#9CA3AF]">elena@meridian.co</div>
+                <div className="text-[13.5px] font-bold">{ownerName}</div>
+                <div className="text-xs font-medium text-[#9CA3AF]">{ownerEmail}</div>
               </div>
               <Link
                 href="/"

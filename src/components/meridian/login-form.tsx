@@ -17,7 +17,7 @@ export function LoginForm() {
         <input
           name="email"
           type="email"
-          defaultValue="demo@meridian.co"
+          defaultValue="admin@meridian.co"
           required
           className="mt-2 w-full rounded-[13px] border border-[#E7E8EC] bg-[#FCFCFD] px-4 py-3.5 text-[15px] outline-none"
         />
@@ -33,7 +33,7 @@ export function LoginForm() {
           <input
             name="password"
             type="password"
-            defaultValue="demo1234"
+            defaultValue="admin12345"
             required
             className="w-full rounded-[13px] border border-[#E7E8EC] bg-[#FCFCFD] px-4 py-3.5 text-[15px] outline-none"
           />

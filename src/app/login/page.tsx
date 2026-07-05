@@ -78,6 +78,13 @@ export default function LoginPage() {
               Continue with Gmail
             </button>
           </form>
+
+          <p className="mt-6 text-center text-[13.5px] font-medium text-[#9CA3AF]">
+            New to Meridian?{" "}
+            <Link href="/signup" className="navlink font-semibold text-[#7C8CF8]">
+              List your hotel
+            </Link>
+          </p>
         </div>
       </div>
     </div>
