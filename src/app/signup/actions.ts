@@ -5,6 +5,10 @@ import { AuthError } from "next-auth";
 import { signIn } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { signupSchema } from "@/lib/validation";
+import { addHotelImages } from "@/lib/data/hotels";
+import { uploadMedia } from "@/lib/s3";
+
+const MAX_SIGNUP_IMAGES = 3;
 
 export async function signupAction(
   _prevState: string | undefined,
@@ -29,12 +33,12 @@ export async function signupAction(
   const passwordHash = await bcrypt.hash(password, 12);
   const code = await generateHotelCode(hotelName);
 
-  await prisma.$transaction(async (tx) => {
+  const hotelId = await prisma.$transaction(async (tx) => {
     const owner = await tx.user.create({
       data: { name: ownerName, email, password: passwordHash, systemRole: "HOTEL_OWNER" },
     });
 
-    await tx.hotel.create({
+    const hotel = await tx.hotel.create({
       data: {
         ownerId: owner.id,
         code,
@@ -53,7 +57,23 @@ export async function signupAction(
     await tx.activityLog.create({
       data: { userId: owner.id, action: "hotel.signup", metadata: { hotelName } },
     });
+
+    return hotel.id;
   });
+
+  // Best-effort: photos are a nice-to-have at signup, never worth blocking account creation over.
+  const imageFiles = formData
+    .getAll("images")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, MAX_SIGNUP_IMAGES);
+  if (imageFiles.length > 0) {
+    try {
+      const urls = await Promise.all(imageFiles.map((file) => uploadMedia(file, "hotels")));
+      await addHotelImages(hotelId, urls);
+    } catch {
+      // Owner can add photos later from My Hotel settings — don't fail signup over an upload hiccup.
+    }
+  }
 
   try {
     await signIn("credentials", { email, password, redirectTo: "/admin" });

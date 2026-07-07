@@ -9,7 +9,7 @@ export async function listHotels() {
     include: {
       roomTypes: { select: { id: true, basePricePerNight: true } },
       reviews: { select: { rating: true } },
-      images: { where: { isCover: true }, take: 1 },
+      images: { orderBy: { sortOrder: "asc" } },
     },
   });
 
@@ -28,13 +28,29 @@ export async function listHotels() {
       country: h.country,
       tag: h.tag,
       gradient: h.gradient,
-      coverImageUrl: h.images[0]?.url ?? null,
+      coverImageUrl: h.images.find((img) => img.isCover)?.url ?? h.images[0]?.url ?? null,
+      images: h.images.map((img) => ({ url: img.url })),
       description: h.description,
       priceFrom,
       rating: Math.round(rating * 10) / 10,
       reviewCount: h.reviews.length,
     };
   });
+}
+
+/** Distinct "City, Country" and hotel-name suggestions for the homepage destination search. */
+export async function listDestinationSuggestions(): Promise<string[]> {
+  const hotels = await prisma.hotel.findMany({
+    where: { accountStatus: "ACTIVE" },
+    select: { name: true, city: true, country: true },
+  });
+
+  const suggestions = new Set<string>();
+  for (const h of hotels) {
+    suggestions.add(`${h.city}, ${h.country}`);
+    suggestions.add(h.name);
+  }
+  return Array.from(suggestions).sort();
 }
 
 export async function getHotel(id: string) {
@@ -54,6 +70,36 @@ export async function setHotelCoverImage(hotelId: string, url: string) {
     prisma.hotelImage.deleteMany({ where: { hotelId, isCover: true } }),
     prisma.hotelImage.create({ data: { hotelId, url, isCover: true } }),
   ]);
+}
+
+/** Appends one or more media items to a hotel's gallery. The very first image ever added becomes the cover. */
+export async function addHotelImages(hotelId: string, urls: string[]) {
+  if (urls.length === 0) return;
+  const [existingCount, hasCover] = await Promise.all([
+    prisma.hotelImage.count({ where: { hotelId } }),
+    prisma.hotelImage.count({ where: { hotelId, isCover: true } }),
+  ]);
+  await prisma.hotelImage.createMany({
+    data: urls.map((url, i) => ({
+      hotelId,
+      url,
+      isCover: hasCover === 0 && i === 0,
+      sortOrder: existingCount + i,
+    })),
+  });
+}
+
+/** Removes one image from a hotel's gallery and promotes the next image to cover if needed. */
+export async function deleteHotelImage(imageId: string, hotelId: string) {
+  const image = await prisma.hotelImage.findFirst({ where: { id: imageId, hotelId } });
+  if (!image) return;
+
+  await prisma.hotelImage.delete({ where: { id: imageId } });
+
+  if (image.isCover) {
+    const next = await prisma.hotelImage.findFirst({ where: { hotelId }, orderBy: { sortOrder: "asc" } });
+    if (next) await prisma.hotelImage.update({ where: { id: next.id }, data: { isCover: true } });
+  }
 }
 
 /** Public hotel detail page — only reachable while the hotel's account is ACTIVE. */

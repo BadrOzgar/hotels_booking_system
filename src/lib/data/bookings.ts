@@ -65,11 +65,14 @@ export async function createBooking(
     });
 
     const nights = nightsBetween(checkIn, checkOut);
+    const isCard = input.paymentMethod === "CARD";
+    // Pay-at-hotel bookings settle everything (including any local fees/taxes) directly
+    // with the front desk — we only charge the room rate through the platform.
     const pricing = computePricing({
       pricePerNight: Number(roomType.basePricePerNight),
       nights,
-      serviceFeeCents: roomType.hotel.serviceFeeCents,
-      taxRatePercent: Number(roomType.hotel.taxRatePercent),
+      serviceFeeCents: isCard ? roomType.hotel.serviceFeeCents : 0,
+      taxRatePercent: isCard ? Number(roomType.hotel.taxRatePercent) : 0,
     });
 
     let confirmationCode = generateConfirmationCode(roomType.hotel.code);
@@ -78,8 +81,6 @@ export async function createBooking(
       if (!clash) break;
       confirmationCode = generateConfirmationCode(roomType.hotel.code);
     }
-
-    const isCard = input.paymentMethod === "CARD";
 
     const booking = await tx.booking.create({
       data: {
@@ -130,8 +131,12 @@ export async function createBooking(
                   amount: pricing.base,
                   sortOrder: 0,
                 },
-                { label: "Service fee", unitAmount: pricing.serviceFee, amount: pricing.serviceFee, sortOrder: 1 },
-                { label: "Taxes", unitAmount: pricing.tax, amount: pricing.tax, sortOrder: 2 },
+                ...(pricing.serviceFee > 0
+                  ? [{ label: "Service fee", unitAmount: pricing.serviceFee, amount: pricing.serviceFee, sortOrder: 1 }]
+                  : []),
+                ...(pricing.tax > 0
+                  ? [{ label: "Taxes", unitAmount: pricing.tax, amount: pricing.tax, sortOrder: 2 }]
+                  : []),
               ],
             },
           },
@@ -175,6 +180,28 @@ export async function getAdminBooking(id: string, hotelId: string) {
       invoice: { include: { lineItems: { orderBy: { sortOrder: "asc" } } } },
       statusHistory: { orderBy: { createdAt: "desc" } },
     },
+  });
+}
+
+export class PaymentNotFoundError extends Error {
+  constructor() {
+    super("No payment record found for this booking.");
+    this.name = "PaymentNotFoundError";
+  }
+}
+
+/** Front desk marks a pay-at-hotel payment as collected (cash/card taken in person at check-in). */
+export async function markPaymentPaid(bookingId: string, hotelId: string) {
+  const booking = await prisma.booking.findFirst({
+    where: { id: bookingId, hotelId },
+    include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } },
+  });
+  const payment = booking?.payments[0];
+  if (!payment) throw new PaymentNotFoundError();
+
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: { status: "PAID", paidAt: new Date(), provider: payment.provider ?? "front_desk" },
   });
 }
 

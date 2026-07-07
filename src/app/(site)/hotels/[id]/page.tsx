@@ -39,7 +39,7 @@ export default async function HotelDetailPage({
       <div className="flex items-center gap-2 text-[13.5px] font-medium text-[#9CA3AF]">
         <Link href="/" className="navlink">Home</Link>
         <ChevronRight className="size-[15px]" />
-        <Link href="/gallery" className="navlink">Gallery</Link>
+        <Link href="/hotels" className="navlink">Hotels</Link>
         <ChevronRight className="size-[15px]" />
         <span className="text-[#6B7280]">{hotel.name}</span>
       </div>

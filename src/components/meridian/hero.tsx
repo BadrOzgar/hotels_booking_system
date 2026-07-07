@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MapPin } from "lucide-react";
 
 export function Hero() {
@@ -9,22 +10,20 @@ export function Hero() {
         className="fu relative mt-3 overflow-hidden rounded-[28px]"
         style={{ boxShadow: "0 20px 50px rgba(16,24,40,.12)" }}
       >
-        <div
-          className="relative h-[560px]"
-          style={{ background: "linear-gradient(135deg,#8FD3FE 0%,#7C8CF8 55%,#A8E6CF 100%)" }}
-        >
+        <div className="relative h-[560px]">
+          <Image src="/hero_section.png" alt="" fill priority sizes="100vw" className="object-cover" />
           <div
             className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(120% 90% at 20% 10%,rgba(255,255,255,.28),transparent 60%)",
+                "linear-gradient(90deg,rgba(16,24,40,.62) 0%,rgba(16,24,40,.32) 40%,transparent 68%)",
             }}
           />
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg,rgba(16,24,40,.05),rgba(16,24,40,.34))",
+                "linear-gradient(180deg,rgba(16,24,40,.08),rgba(16,24,40,.3))",
             }}
           />
           <div className="relative flex h-full max-w-[640px] flex-col justify-center px-[60px] py-14">

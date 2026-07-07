@@ -40,11 +40,12 @@ export default async function BookingPage({
   const childCount = Math.max(0, Number(search.children) || 0);
 
   const nights = nightsBetween(new Date(`${checkinValue}T15:00:00`), new Date(`${checkoutValue}T11:00:00`));
+  // Guest checkout is pay-at-hotel only — fees/taxes are settled with the front desk, not charged here.
   const pricing = computePricing({
     pricePerNight: Number(room.basePricePerNight),
     nights,
-    serviceFeeCents: room.hotel.serviceFeeCents,
-    taxRatePercent: Number(room.hotel.taxRatePercent),
+    serviceFeeCents: 0,
+    taxRatePercent: 0,
   });
 
   return (

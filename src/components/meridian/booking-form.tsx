@@ -115,20 +115,27 @@ export function BookingForm({
               </span>
               <span className="font-semibold text-[#1F2937]">{formatCurrency(base)}</span>
             </div>
-            <div className="flex justify-between text-sm font-medium text-[#6B7280]">
-              <span>Service fee</span>
-              <span className="font-semibold text-[#1F2937]">{formatCurrency(serviceFee)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium text-[#6B7280]">
-              <span>Taxes</span>
-              <span className="font-semibold text-[#1F2937]">{formatCurrency(tax)}</span>
-            </div>
+            {serviceFee > 0 && (
+              <div className="flex justify-between text-sm font-medium text-[#6B7280]">
+                <span>Service fee</span>
+                <span className="font-semibold text-[#1F2937]">{formatCurrency(serviceFee)}</span>
+              </div>
+            )}
+            {tax > 0 && (
+              <div className="flex justify-between text-sm font-medium text-[#6B7280]">
+                <span>Taxes</span>
+                <span className="font-semibold text-[#1F2937]">{formatCurrency(tax)}</span>
+              </div>
+            )}
           </div>
           <div className="my-[18px] h-px bg-[#F0F1F4]" />
           <div className="flex items-baseline justify-between">
             <span className="text-[15px] font-bold">Total</span>
             <span className="text-2xl font-extrabold tracking-[-.02em]">{formatCurrency(total)}</span>
           </div>
+          <p className="mt-1.5 text-[12.5px] font-medium text-[#9CA3AF]">
+            Fees and taxes, if any, are settled with the front desk at check-in.
+          </p>
 
           {error && <p className="mt-3 text-[13.5px] font-medium text-[#D96A6A]">{error}</p>}
 

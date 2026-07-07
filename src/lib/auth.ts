@@ -1,10 +1,15 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 import type { SystemRole } from "@/generated/prisma/enums";
+
+/** Thrown instead of a generic sign-in failure so the login page can show a distinct message. */
+export class AccountSuspendedError extends CredentialsSignin {
+  code = "account_suspended";
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -33,7 +38,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!isValid) return null;
 
         // A suspended hotel account is fully locked out until reactivated by the Super Admin.
-        if (user.ownedHotel?.accountStatus === "SUSPENDED") return null;
+        if (user.ownedHotel?.accountStatus === "SUSPENDED") throw new AccountSuspendedError();
 
         await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 

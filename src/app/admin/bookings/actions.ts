@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requireHotelOwnerSession } from "@/lib/session";
-import { createBooking, updateBookingStatus, updateBookingDetails, RoomUnavailableError } from "@/lib/data/bookings";
+import {
+  createBooking,
+  updateBookingStatus,
+  updateBookingDetails,
+  markPaymentPaid,
+  RoomUnavailableError,
+} from "@/lib/data/bookings";
 import { logActivity } from "@/lib/data/activity";
 import { guestBookingSchema } from "@/lib/validation";
 import type { BookingStatus } from "@/generated/prisma/enums";
@@ -14,6 +20,14 @@ export async function updateBookingStatusAction(bookingId: string, status: Booki
   revalidatePath(`/admin/bookings/${bookingId}`);
   revalidatePath("/admin/bookings");
   revalidatePath("/admin");
+}
+
+export async function markPaymentPaidAction(bookingId: string) {
+  const { userId, hotelId } = await requireHotelOwnerSession();
+  await markPaymentPaid(bookingId, hotelId);
+  await logActivity({ action: "payment.marked_paid", userId, hotelId, metadata: { bookingId } });
+  revalidatePath(`/admin/bookings/${bookingId}`);
+  revalidatePath("/admin/bookings");
 }
 
 function parseBookingForm(formData: FormData) {

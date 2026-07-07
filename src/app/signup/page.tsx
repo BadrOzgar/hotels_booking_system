@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Waves, Star, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import { Star, ArrowLeft } from "lucide-react";
 import { SignupForm } from "@/components/meridian/signup-form";
 
 export default function SignupPage() {
@@ -20,9 +21,7 @@ export default function SignupPage() {
         />
         <div className="relative flex h-full flex-col justify-between px-14 py-12">
           <Link href="/" className="flex items-center gap-[11px]">
-            <div className="flex size-9 items-center justify-center rounded-[11px] bg-white/92">
-              <Waves className="size-5 text-[#7C8CF8]" />
-            </div>
+            <Image src="/logo.png" alt="Meridian" width={36} height={36} className="rounded-[11px]" />
             <span className="text-xl font-bold text-white">Meridian</span>
           </Link>
           <div>

@@ -32,7 +32,7 @@ export default async function AdminRoomsPage() {
         </div>
       </div>
 
-      <AdminRoomsTable rows={rows} amenities={amenities.map((a) => ({ id: a.id, label: a.label }))} />
+      <AdminRoomsTable rows={rows} amenities={amenities.map((a) => ({ id: a.id, label: a.label, icon: a.icon }))} />
     </div>
   );
 }

@@ -37,7 +37,7 @@ export type AdminRoomRow = {
   coverImageUrl: string | null;
 };
 
-type Amenity = { id: string; label: string };
+type Amenity = { id: string; label: string; icon: string | null };
 
 type EditData = Awaited<ReturnType<typeof getRoomUnitForEditAction>>;
 

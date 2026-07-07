@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn, LogOut, X } from "lucide-react";
+import { LogIn, LogOut, X, Banknote } from "lucide-react";
 import { bookingStatusTokens, formatStatusLabel } from "@/lib/meridian-data";
-import { updateBookingStatusAction } from "@/app/admin/bookings/actions";
+import { updateBookingStatusAction, markPaymentPaidAction } from "@/app/admin/bookings/actions";
 import type { BookingStatus } from "@/generated/prisma/enums";
 
 export function BookingHeader({
@@ -76,5 +76,35 @@ export function BookingHeader({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Lets front desk mark a pay-at-hotel payment as collected once the guest settles their bill. */
+export function MarkPaidButton({ bookingId, paymentStatus }: { bookingId: string; paymentStatus: string }) {
+  const router = useRouter();
+  const [paid, setPaid] = useState(paymentStatus === "PAID");
+  const [pending, startTransition] = useTransition();
+
+  if (paid) return null;
+
+  function handleClick() {
+    startTransition(async () => {
+      await markPaymentPaidAction(bookingId);
+      setPaid(true);
+      router.refresh();
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={handleClick}
+      className="btnp mt-[14px] flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13.5px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+      style={{ background: "#4FB878", boxShadow: "0 4px 14px rgba(79,184,120,.28)" }}
+    >
+      <Banknote className="size-4" />
+      {pending ? "Marking as paid…" : "Mark as paid"}
+    </button>
   );
 }

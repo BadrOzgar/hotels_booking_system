@@ -153,7 +153,7 @@ export default async function AboutPage() {
               reservation from confirmation to check-out.
             </p>
             <Link
-              href="/gallery"
+              href="/hotels"
               className="btnp mt-7 inline-flex items-center gap-2 rounded-[13px] px-6 py-3.5 text-[14.5px] font-semibold text-white"
               style={{ background: "#7C8CF8", boxShadow: "0 4px 14px rgba(124,140,248,.28)" }}
             >
@@ -278,7 +278,7 @@ export default async function AboutPage() {
               Browse our hotels and book directly, at the best rate, in minutes.
             </p>
             <Link
-              href="/gallery"
+              href="/hotels"
               className="btns mt-[30px] inline-block rounded-[15px] bg-white px-8 py-4 text-base font-bold text-[#1F2937]"
               style={{ boxShadow: "0 8px 24px rgba(16,24,40,.16)" }}
             >

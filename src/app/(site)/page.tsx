@@ -15,8 +15,10 @@ import {
 import { Hero } from "@/components/meridian/hero";
 import { SearchCard } from "@/components/meridian/search-card";
 import { RoomCard } from "@/components/meridian/room-card";
+import { PricingSection } from "@/components/meridian/pricing-section";
 import { getFeaturedRoomTypes } from "@/lib/data/room-types";
 import { listHotelLevelAmenities, listFaqs, listFeaturedReviews } from "@/lib/data/content";
+import { listDestinationSuggestions } from "@/lib/data/hotels";
 
 const amenityIcons: Record<string, typeof Waves> = {
   waves: Waves,
@@ -37,11 +39,12 @@ const amenityColors: Record<string, { bg: string; fg: string }> = {
 };
 
 export default async function LandingPage() {
-  const [featured, amenities, faqs, testimonials] = await Promise.all([
+  const [featured, amenities, faqs, testimonials, destinations] = await Promise.all([
     getFeaturedRoomTypes(3),
     listHotelLevelAmenities(),
     listFaqs(),
     listFeaturedReviews(3),
+    listDestinationSuggestions(),
   ]);
 
   const avgRating = testimonials.length
@@ -51,7 +54,7 @@ export default async function LandingPage() {
   return (
     <div className="fu mx-auto max-w-[1240px] px-8 pb-24">
       <Hero />
-      <SearchCard />
+      <SearchCard destinations={destinations} />
 
       {/* FEATURED ROOMS */}
       <div className="pt-[88px]">
@@ -204,6 +207,9 @@ export default async function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* PRICING */}
+      <PricingSection />
 
       {/* CTA */}
       <div

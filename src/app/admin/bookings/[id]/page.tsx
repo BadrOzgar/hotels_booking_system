@@ -5,7 +5,7 @@ import { paymentStatusTokens, formatStatusLabel } from "@/lib/meridian-data";
 import { getAdminBooking } from "@/lib/data/bookings";
 import { formatCurrency } from "@/lib/pricing";
 import { requireHotelOwnerSession } from "@/lib/session";
-import { BookingHeader } from "@/components/admin/booking-actions";
+import { BookingHeader, MarkPaidButton } from "@/components/admin/booking-actions";
 import { EditBookingButton } from "@/components/admin/edit-booking-button";
 
 function formatDate(d: Date) {
@@ -174,14 +174,18 @@ export default async function AdminBookingDetailPage({
               </span>
               <span className="font-semibold text-[#1F2937]">{formatCurrency(Number(booking.baseAmount))}</span>
             </div>
-            <div className="flex justify-between text-sm font-medium text-[#6B7280]">
-              <span>Service fee</span>
-              <span className="font-semibold text-[#1F2937]">{formatCurrency(Number(booking.serviceFeeAmount))}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium text-[#6B7280]">
-              <span>Taxes</span>
-              <span className="font-semibold text-[#1F2937]">{formatCurrency(Number(booking.taxAmount))}</span>
-            </div>
+            {Number(booking.serviceFeeAmount) > 0 && (
+              <div className="flex justify-between text-sm font-medium text-[#6B7280]">
+                <span>Service fee</span>
+                <span className="font-semibold text-[#1F2937]">{formatCurrency(Number(booking.serviceFeeAmount))}</span>
+              </div>
+            )}
+            {Number(booking.taxAmount) > 0 && (
+              <div className="flex justify-between text-sm font-medium text-[#6B7280]">
+                <span>Taxes</span>
+                <span className="font-semibold text-[#1F2937]">{formatCurrency(Number(booking.taxAmount))}</span>
+              </div>
+            )}
           </div>
           <div className="my-[18px] h-px bg-[#F0F1F4]" />
           <div className="flex items-baseline justify-between">
@@ -200,6 +204,9 @@ export default async function AdminBookingDetailPage({
                   : "No payment recorded"}
             </span>
           </div>
+          {latestPayment?.method === "PAY_AT_HOTEL" && (
+            <MarkPaidButton bookingId={booking.id} paymentStatus={latestPayment.status} />
+          )}
         </div>
       </div>
     </div>

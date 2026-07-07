@@ -1,28 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
-import { Check, Video, X } from "lucide-react";
+import { Check, Video, X, Loader2, Plus } from "lucide-react";
 import { useDrawerForm } from "@/hooks/use-drawer-form";
+import { usePreviewUrls } from "@/hooks/use-preview-urls";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
+import { compressImageFile } from "@/lib/compress-image";
+import { amenityIcon } from "@/lib/amenity-icons";
+import { createAmenityAction, applyDefaultAmenitiesAction } from "@/app/admin/rooms/actions";
 
-type Amenity = { id: string; label: string };
+type Amenity = { id: string; label: string; icon: string | null };
 type MediaItem = { id: string; url: string; isCover: boolean };
 
-/** Generates (and cleans up) blob preview URLs for files the user just picked, before they're uploaded. */
-function usePreviewUrls(files: File[]): string[] {
-  const urls = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE" | "HIDDEN";
+// "Occupied" is set automatically when front desk checks a guest in/out — not a state staff pick by hand.
+const MANUAL_STATUS_OPTIONS = ["AVAILABLE", "MAINTENANCE", "HIDDEN"] as const;
 
-  useEffect(() => {
-    return () => {
-      urls.forEach((u) => URL.revokeObjectURL(u));
-    };
-  }, [urls]);
-
-  return urls;
-}
-
-const STATUS_OPTIONS = ["AVAILABLE", "OCCUPIED", "MAINTENANCE", "HIDDEN"] as const;
+const PRESET_ROOM_CATEGORIES = [
+  "Standard Room",
+  "Deluxe Room",
+  "Suite",
+  "Family Room",
+  "Studio",
+  "Loft",
+  "Villa",
+  "Bungalow",
+  "Penthouse",
+] as const;
 
 type RoomTypeFormValues = {
   name: string;
@@ -33,7 +38,7 @@ type RoomTypeFormValues = {
   sizeSqm: number | null;
   bathrooms: number;
   unitNumber: string;
-  status: (typeof STATUS_OPTIONS)[number];
+  status: RoomStatus;
   amenityIds: string[];
   images?: MediaItem[];
 };
@@ -56,12 +61,64 @@ export function RoomTypeForm({
   onDeleteImage?: (imageId: string) => Promise<void>;
 }) {
   const { error, pending, submit } = useDrawerForm(action, onSuccess);
-  const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>(initial?.status ?? "AVAILABLE");
+  const [status, setStatus] = useState<RoomStatus>(initial?.status ?? "AVAILABLE");
   const [images, setImages] = useState<MediaItem[]>(initial?.images ?? []);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [compressing, setCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const selectedAmenityIds = initial?.amenityIds ?? [];
+
+  const initialIsPreset = !initial?.category || (PRESET_ROOM_CATEGORIES as readonly string[]).includes(initial.category);
+  const [categoryChoice, setCategoryChoice] = useState<string>(
+    initialIsPreset ? (initial?.category ?? PRESET_ROOM_CATEGORIES[0]) : "Other"
+  );
+  const [customCategory, setCustomCategory] = useState(initialIsPreset ? "" : (initial?.category ?? ""));
+  const resolvedCategory = categoryChoice === "Other" ? customCategory : categoryChoice;
+
+  const [amenityList, setAmenityList] = useState<Amenity[]>(amenities);
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>(initial?.amenityIds ?? []);
+  const [newAmenityLabel, setNewAmenityLabel] = useState("");
+  const [addingAmenity, setAddingAmenity] = useState(false);
+  const [amenityError, setAmenityError] = useState<string | null>(null);
+  const [applyingDefaults, setApplyingDefaults] = useState(false);
+  const [defaultsMessage, setDefaultsMessage] = useState<string | null>(null);
+
+  function toggleAmenity(id: string) {
+    setSelectedAmenityIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+  }
+
+  async function handleAddAmenity() {
+    const label = newAmenityLabel.trim();
+    if (!label) return;
+    setAddingAmenity(true);
+    setAmenityError(null);
+    try {
+      const amenity = await createAmenityAction(label);
+      setAmenityList((prev) => (prev.some((a) => a.id === amenity.id) ? prev : [...prev, amenity]));
+      setSelectedAmenityIds((prev) => (prev.includes(amenity.id) ? prev : [...prev, amenity.id]));
+      setNewAmenityLabel("");
+    } catch (err) {
+      setAmenityError(err instanceof Error ? err.message : "Couldn't add that amenity.");
+    } finally {
+      setAddingAmenity(false);
+    }
+  }
+
+  async function handleApplyDefaults() {
+    if (!window.confirm("Apply the selected amenities to every room in your hotel? This replaces each room's current amenities.")) {
+      return;
+    }
+    setApplyingDefaults(true);
+    setDefaultsMessage(null);
+    try {
+      await applyDefaultAmenitiesAction(selectedAmenityIds);
+      setDefaultsMessage("Applied to all rooms.");
+    } catch {
+      setDefaultsMessage("Couldn't apply defaults — try again.");
+    } finally {
+      setApplyingDefaults(false);
+    }
+  }
 
   const pendingPreviews = usePreviewUrls(pendingFiles);
 
@@ -71,12 +128,19 @@ export function RoomTypeForm({
     if (fileInputRef.current) fileInputRef.current.files = dt.files;
   }
 
-  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const newFiles = Array.from(e.target.files ?? []);
     if (newFiles.length === 0) return;
-    const combined = [...pendingFiles, ...newFiles];
-    setPendingFiles(combined);
-    syncFileInput(combined);
+    setCompressing(true);
+    try {
+      // Shrink each photo client-side before upload — videos pass through untouched.
+      const processed = await Promise.all(newFiles.map((f) => compressImageFile(f)));
+      const combined = [...pendingFiles, ...processed];
+      setPendingFiles(combined);
+      syncFileInput(combined);
+    } finally {
+      setCompressing(false);
+    }
   }
 
   function removePending(index: number) {
@@ -169,18 +233,44 @@ export function RoomTypeForm({
           type="file"
           accept={MEDIA_ACCEPT}
           multiple
+          disabled={compressing}
           onChange={handleFilesSelected}
-          className="mt-2.5 w-full text-[13.5px] text-[#6B7280] file:mr-3 file:rounded-lg file:border-0 file:bg-[#F3F5FF] file:px-3.5 file:py-2 file:text-[13px] file:font-semibold file:text-[#4A5AE0]"
+          className="mt-2.5 w-full text-[13.5px] text-[#6B7280] file:mr-3 file:rounded-lg file:border-0 file:bg-[#F3F5FF] file:px-3.5 file:py-2 file:text-[13px] file:font-semibold file:text-[#4A5AE0] disabled:opacity-60"
         />
-        <p className="mt-1.5 text-[12px] font-medium text-[#9CA3AF]">
-          Add as many photos and videos as you like — the first one uploaded becomes the cover. New items are
-          previewed here until you save.
+        <p className="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-[#9CA3AF]">
+          {compressing && <Loader2 className="size-3 animate-spin" />}
+          {compressing
+            ? "Processing photos…"
+            : "Add as many photos and videos as you like — the first one uploaded becomes the cover. New items are previewed here until you save."}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2">
         <Field label="Room title" name="name" defaultValue={initial?.name} placeholder="Tide Suite" />
-        <Field label="Room type" name="category" defaultValue={initial?.category} placeholder="Suite" />
+        <div>
+          <label className="text-[13px] font-semibold text-[#374151]">Room type</label>
+          <select
+            value={categoryChoice}
+            onChange={(e) => setCategoryChoice(e.target.value)}
+            className="mt-2 w-full rounded-xl border border-[#E7E8EC] bg-[#FCFCFD] px-3.5 py-3 text-[15px] outline-none"
+          >
+            {PRESET_ROOM_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+            <option value="Other">Other</option>
+          </select>
+          {categoryChoice === "Other" && (
+            <input
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder="Enter a custom room type"
+              className="mt-2 w-full rounded-xl border border-[#E7E8EC] bg-[#FCFCFD] px-3.5 py-3 text-[15px] outline-none"
+            />
+          )}
+          <input type="hidden" name="category" value={resolvedCategory} />
+        </div>
 
         <div className="sm:col-span-2">
           <label className="text-[13px] font-semibold text-[#374151]">Description</label>
@@ -218,42 +308,103 @@ export function RoomTypeForm({
       <div className="mt-[18px]">
         <label className="text-[13px] font-semibold text-[#374151]">Amenities</label>
         <div className="mt-3 flex flex-wrap gap-2">
-          {amenities.map((a) => {
-            const defaultChecked = selectedAmenityIds.includes(a.id);
+          {amenityList.map((a) => {
+            const isSelected = selectedAmenityIds.includes(a.id);
+            const AmenityIcon = amenityIcon(a.icon);
             return (
-              <label
+              <button
+                type="button"
                 key={a.id}
-                className="flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-[#E7E8EC] px-3.5 py-2 text-[13px] font-semibold text-[#6B7280] has-checked:border-[#C9D1FB] has-checked:bg-[#F3F5FF] has-checked:text-[#4A5AE0]"
+                onClick={() => toggleAmenity(a.id)}
+                className="flex cursor-pointer items-center gap-1.5 rounded-[10px] border px-3.5 py-2 text-[13px] font-semibold"
+                style={
+                  isSelected
+                    ? { borderColor: "#C9D1FB", background: "#F3F5FF", color: "#4A5AE0" }
+                    : { borderColor: "#E7E8EC", background: "#fff", color: "#6B7280" }
+                }
               >
-                <input type="checkbox" name="amenityIds" value={a.id} defaultChecked={defaultChecked} className="peer sr-only" />
-                <Check className="hidden size-3.5 peer-checked:inline" />
+                <AmenityIcon className="size-3.5" />
                 {a.label}
-              </label>
+                {isSelected && <Check className="size-3.5" />}
+              </button>
             );
           })}
+        </div>
+        {/* Hidden inputs mirror the controlled selection so the surrounding <form> submits it. */}
+        {selectedAmenityIds.map((id) => (
+          <input key={id} type="hidden" name="amenityIds" value={id} />
+        ))}
+
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            value={newAmenityLabel}
+            onChange={(e) => setNewAmenityLabel(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddAmenity();
+              }
+            }}
+            placeholder="Other — add a custom amenity"
+            disabled={addingAmenity}
+            className="flex-1 rounded-xl border border-dashed border-[#D8DAE2] bg-[#FCFCFD] px-3.5 py-2.5 text-[13.5px] outline-none disabled:opacity-60"
+          />
+          <button
+            type="button"
+            onClick={handleAddAmenity}
+            disabled={addingAmenity || !newAmenityLabel.trim()}
+            className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#E7E8EC] bg-white px-3.5 py-2.5 text-[13px] font-semibold text-[#4A5AE0] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {addingAmenity ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+            Add
+          </button>
+        </div>
+        {amenityError && <p className="mt-1.5 text-[12.5px] font-medium text-[#D96A6A]">{amenityError}</p>}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleApplyDefaults}
+            disabled={applyingDefaults}
+            className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#E7E8EC] bg-white px-3.5 py-2 text-[12.5px] font-semibold text-[#374151] disabled:opacity-60"
+          >
+            {applyingDefaults && <Loader2 className="size-3 animate-spin" />}
+            Set as default for all rooms
+          </button>
+          <span className="text-[12px] font-medium text-[#9CA3AF]">
+            {defaultsMessage ?? "Applies the amenities selected above to every room in your hotel."}
+          </span>
         </div>
       </div>
 
       <div className="mt-[18px]">
         <label className="text-[13px] font-semibold text-[#374151]">Status</label>
-        <div className="mt-3 flex flex-wrap gap-2.5">
-          {STATUS_OPTIONS.map((s) => (
-            <button
-              type="button"
-              key={s}
-              onClick={() => setStatus(s)}
-              className="flex cursor-pointer items-center gap-[7px] rounded-[11px] border px-4 py-2.5 text-[13px] font-semibold"
-              style={
-                status === s
-                  ? { borderColor: "#7C8CF8", background: "#F3F5FF", color: "#4A5AE0" }
-                  : { borderColor: "#E7E8EC", background: "#fff", color: "#6B7280" }
-              }
-            >
-              <span className="size-[7px] rounded-full" style={{ background: status === s ? "#7C8CF8" : "#D8DAE2" }} />
-              {s.charAt(0) + s.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
+        {status === "OCCUPIED" ? (
+          <div className="mt-3 flex items-center gap-2.5 rounded-[11px] border border-[#D3DAFB] bg-[#F3F5FF] px-4 py-2.5 text-[13px] font-semibold text-[#4A5AE0]">
+            <span className="size-[7px] rounded-full" style={{ background: "#4A5AE0" }} />
+            Occupied — set automatically while a guest is checked in. Use Check out on their
+            booking to release this room.
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            {MANUAL_STATUS_OPTIONS.map((s) => (
+              <button
+                type="button"
+                key={s}
+                onClick={() => setStatus(s)}
+                className="flex cursor-pointer items-center gap-[7px] rounded-[11px] border px-4 py-2.5 text-[13px] font-semibold"
+                style={
+                  status === s
+                    ? { borderColor: "#7C8CF8", background: "#F3F5FF", color: "#4A5AE0" }
+                    : { borderColor: "#E7E8EC", background: "#fff", color: "#6B7280" }
+                }
+              >
+                <span className="size-[7px] rounded-full" style={{ background: status === s ? "#7C8CF8" : "#D8DAE2" }} />
+                {s.charAt(0) + s.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+        )}
         <input type="hidden" name="status" value={status} />
       </div>
 
@@ -269,7 +420,7 @@ export function RoomTypeForm({
         </button>
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || compressing}
           className="btnp flex items-center justify-center gap-2 rounded-[13px] px-[26px] py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
           style={{ background: "#7C8CF8", boxShadow: "0 6px 18px rgba(124,140,248,.3)" }}
         >

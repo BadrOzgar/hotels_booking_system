@@ -7,13 +7,16 @@ import { PaymentMethod } from "@/components/meridian/payment-method";
 import { formatCurrency } from "@/lib/pricing";
 
 type RoomOption = { id: string; name: string; basePricePerNight: number; capacity: number };
+type InitialGuest = { firstName: string; lastName: string; email: string; phone?: string | null };
 
 export function AddBookingForm({
   roomOptions,
+  initialGuest,
   onSuccess,
   onCancel,
 }: {
   roomOptions: RoomOption[];
+  initialGuest?: InitialGuest;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -75,12 +78,12 @@ export function AddBookingForm({
 
       <h2 className="mt-6 text-[13px] font-bold tracking-[.04em] text-[#9CA3AF] uppercase">Guest</h2>
       <div className="mt-3 grid grid-cols-2 gap-[14px]">
-        <Field label="First name" name="firstName" />
-        <Field label="Last name" name="lastName" />
+        <Field label="First name" name="firstName" defaultValue={initialGuest?.firstName} />
+        <Field label="Last name" name="lastName" defaultValue={initialGuest?.lastName} />
       </div>
       <div className="mt-[14px] grid grid-cols-2 gap-[14px]">
-        <Field label="Email" name="email" type="email" />
-        <Field label="Phone" name="phone" required={false} />
+        <Field label="Email" name="email" type="email" defaultValue={initialGuest?.email} />
+        <Field label="Phone" name="phone" required={false} defaultValue={initialGuest?.phone ?? ""} />
       </div>
       <div className="mt-[14px]">
         <label className="text-[13px] font-semibold text-[#374151]">

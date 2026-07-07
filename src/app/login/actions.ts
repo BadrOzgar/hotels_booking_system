@@ -21,6 +21,9 @@ export async function authenticate(
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
+          if ((error as { code?: string }).code === "account_suspended") {
+            return "Your account has been suspended. Please contact our support team to check your account status.";
+          }
           return "Invalid email or password.";
         default:
           return "Something went wrong. Please try again.";

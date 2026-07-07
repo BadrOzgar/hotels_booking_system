@@ -1,10 +1,14 @@
 import { listGuestsWithStats } from "@/lib/data/guests";
+import { listRoomTypeOptions } from "@/lib/data/room-types";
 import { requireHotelOwnerSession } from "@/lib/session";
 import { AdminGuestsTable } from "@/components/admin/admin-guests-table";
 
 export default async function AdminGuestsPage() {
   const { hotelId } = await requireHotelOwnerSession();
-  const guests = await listGuestsWithStats(hotelId);
+  const [guests, roomOptions] = await Promise.all([
+    listGuestsWithStats(hotelId),
+    listRoomTypeOptions(hotelId),
+  ]);
   const totalBookings = guests.reduce((sum, g) => sum + g.stays, 0);
 
   return (
@@ -16,7 +20,15 @@ export default async function AdminGuestsPage() {
         </p>
       </div>
 
-      <AdminGuestsTable guests={guests} />
+      <AdminGuestsTable
+        guests={guests}
+        roomOptions={roomOptions.map((r) => ({
+          id: r.id,
+          name: r.name,
+          basePricePerNight: Number(r.basePricePerNight),
+          capacity: r.capacity,
+        }))}
+      />
     </div>
   );
 }

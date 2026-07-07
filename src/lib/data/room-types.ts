@@ -24,6 +24,27 @@ export type PublicRoomListing = {
 
 const ACTIVE_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN"] as const;
 
+/**
+ * Builds a Prisma hotel-relation filter for a free-text destination search. Splits on commas
+ * so a "City, Country" suggestion (as offered by the homepage search) still matches hotels
+ * whose city/country/name contains either part individually.
+ */
+function destinationFilter(destination: string | undefined) {
+  const parts = destination
+    ?.split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (!parts || parts.length === 0) return {};
+
+  return {
+    OR: parts.flatMap((part) => [
+      { name: { contains: part, mode: "insensitive" as const } },
+      { city: { contains: part, mode: "insensitive" as const } },
+      { country: { contains: part, mode: "insensitive" as const } },
+    ]),
+  };
+}
+
 /** Options for the Add/Edit Booking room-type selector. */
 export async function listRoomTypeOptions(hotelId: string) {
   return prisma.roomType.findMany({
@@ -192,22 +213,12 @@ type AvailabilityFilters = {
 export async function getAvailableRoomTypes(filters: AvailabilityFilters) {
   const roomsCount = filters.roomsCount ?? 1;
 
-  const destination = filters.destination?.trim();
-
   const roomTypes = await prisma.roomType.findMany({
     where: {
       ...(filters.hotelId ? { hotelId: filters.hotelId } : {}),
       hotel: {
         accountStatus: "ACTIVE",
-        ...(destination
-          ? {
-              OR: [
-                { name: { contains: destination, mode: "insensitive" } },
-                { city: { contains: destination, mode: "insensitive" } },
-                { country: { contains: destination, mode: "insensitive" } },
-              ],
-            }
-          : {}),
+        ...destinationFilter(filters.destination),
       },
       capacity: { gte: Math.ceil(filters.guests / roomsCount) },
     },
@@ -259,6 +270,80 @@ export async function getAvailableRoomTypes(filters: AvailabilityFilters) {
     .filter((rt) => rt.availableUnitCount >= roomsCount);
 }
 
+export type RoomListingPage = {
+  rooms: PublicRoomListing[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+/**
+ * Browses the full room catalogue (no check-in/out dates given) across all ACTIVE hotels,
+ * optionally narrowed by destination. Paginated on the backend via SQL `skip`/`take` — the
+ * page only ever transfers `pageSize` rows, so this stays fast regardless of catalogue size.
+ */
+export async function listAllRoomTypes({
+  destination,
+  page = 1,
+  pageSize = 15,
+}: {
+  destination?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<RoomListingPage> {
+  const where = {
+    hotel: { accountStatus: "ACTIVE" as const, ...destinationFilter(destination) },
+  };
+
+  const safePage = Math.max(1, page);
+
+  const [totalCount, roomTypes] = await Promise.all([
+    prisma.roomType.count({ where }),
+    prisma.roomType.findMany({
+      where,
+      include: {
+        hotel: { select: { id: true, name: true, city: true, country: true } },
+        beds: true,
+        images: { where: { isCover: true }, take: 1 },
+        reviews: { select: { rating: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (safePage - 1) * pageSize,
+      take: pageSize,
+    }),
+  ]);
+
+  const rooms: PublicRoomListing[] = roomTypes.map((rt) => {
+    const rating = rt.reviews.length ? rt.reviews.reduce((s, r) => s + r.rating, 0) / rt.reviews.length : 0;
+    return {
+      id: rt.id,
+      hotelId: rt.hotelId,
+      hotel: rt.hotel,
+      name: rt.name,
+      type: rt.category,
+      description: rt.description,
+      price: Number(rt.basePricePerNight),
+      cap: rt.capacity,
+      size: rt.sizeSqm,
+      bath: rt.bathrooms,
+      gradient: rt.gradient,
+      coverImageUrl: rt.images[0]?.url ?? null,
+      beds: formatBeds(rt.beds),
+      rating: Math.round(rating * 10) / 10,
+      reviews: rt.reviews.length,
+    };
+  });
+
+  return {
+    rooms,
+    totalCount,
+    page: safePage,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+  };
+}
+
 /** Homepage "Featured stays" — highest-rated room types across all ACTIVE hotels. */
 export async function getFeaturedRoomTypes(limit = 3): Promise<PublicRoomListing[]> {
   const roomTypes = await prisma.roomType.findMany({
@@ -297,6 +382,52 @@ export async function getFeaturedRoomTypes(limit = 3): Promise<PublicRoomListing
     })
     .sort((a, b) => b.rating - a.rating)
     .slice(0, limit);
+}
+
+/**
+ * ISO dates (within the next `monthsAhead`) where every bookable unit of this room type is
+ * already booked, for the public room detail page's availability calendar. A unit under
+ * MAINTENANCE/HIDDEN never counts as bookable, matching getAvailableRoomTypes' logic.
+ */
+export async function getRoomTypeUnavailableDates(roomTypeId: string, monthsAhead = 12): Promise<string[]> {
+  const rangeStart = new Date();
+  rangeStart.setHours(0, 0, 0, 0);
+  const rangeEnd = new Date(rangeStart);
+  rangeEnd.setMonth(rangeEnd.getMonth() + monthsAhead);
+
+  const units = await prisma.roomUnit.findMany({
+    where: { roomTypeId, status: { notIn: ["MAINTENANCE", "HIDDEN"] } },
+    select: { id: true },
+  });
+  const totalBookableUnits = units.length;
+  if (totalBookableUnits === 0) return [];
+
+  const bookings = await prisma.booking.findMany({
+    where: {
+      roomUnitId: { in: units.map((u) => u.id) },
+      status: { in: [...ACTIVE_BOOKING_STATUSES] },
+      checkIn: { lt: rangeEnd },
+      checkOut: { gt: rangeStart },
+    },
+    select: { checkIn: true, checkOut: true, roomUnitId: true },
+  });
+
+  const bookedUnitsByDate = new Map<string, Set<string>>();
+  for (const b of bookings) {
+    const cursor = new Date(Math.max(b.checkIn.getTime(), rangeStart.getTime()));
+    cursor.setHours(0, 0, 0, 0);
+    const end = new Date(Math.min(b.checkOut.getTime(), rangeEnd.getTime()));
+    while (cursor < end) {
+      const iso = cursor.toISOString().slice(0, 10);
+      if (!bookedUnitsByDate.has(iso)) bookedUnitsByDate.set(iso, new Set());
+      bookedUnitsByDate.get(iso)!.add(b.roomUnitId!);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  return [...bookedUnitsByDate.entries()]
+    .filter(([, bookedUnitIds]) => bookedUnitIds.size >= totalBookableUnits)
+    .map(([iso]) => iso);
 }
 
 /** Appends one or more media items to a room type's gallery. The very first image ever added becomes the cover. */

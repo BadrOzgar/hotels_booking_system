@@ -1,9 +1,20 @@
 import Link from "next/link";
-import { Waves, Star, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import { Star, ArrowLeft } from "lucide-react";
 import { LoginForm } from "@/components/meridian/login-form";
 import { continueWithGmail } from "@/app/login/actions";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const suspendedMessage =
+    error === "AccountSuspended"
+      ? "Your account has been suspended. Please contact our support team to check your account status."
+      : null;
+
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
       {/* LEFT IMAGE */}
@@ -21,9 +32,7 @@ export default function LoginPage() {
         />
         <div className="relative flex h-full flex-col justify-between px-14 py-12">
           <Link href="/" className="flex items-center gap-[11px]">
-            <div className="flex size-9 items-center justify-center rounded-[11px] bg-white/92">
-              <Waves className="size-5 text-[#7C8CF8]" />
-            </div>
+            <Image src="/logo.png" alt="Meridian" width={36} height={36} className="rounded-[11px]" />
             <span className="text-xl font-bold text-white">Meridian</span>
           </Link>
           <div>
@@ -61,6 +70,12 @@ export default function LoginPage() {
           <p className="mt-3 text-[15.5px] text-[#6B7280]">
             Sign in to your Meridian admin workspace.
           </p>
+
+          {suspendedMessage && (
+            <p className="mt-4 rounded-xl border border-[#F5CFCF] bg-[#FDEEEE] px-4 py-3 text-[13.5px] font-medium text-[#D96A6A]">
+              {suspendedMessage}
+            </p>
+          )}
 
           <LoginForm />
 

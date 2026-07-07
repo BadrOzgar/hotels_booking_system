@@ -53,14 +53,23 @@ export async function uploadMedia(file: File, folder: "hotels" | "rooms"): Promi
   const key = `${folder}/${randomUUID()}.${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  await getClient().send(
-    new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
-    })
-  );
+  try {
+    await getClient().send(
+      new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+      }),
+      // Fail fast instead of tying up the request indefinitely on a stalled connection.
+      { abortSignal: AbortSignal.timeout(60_000) }
+    );
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      throw new Error("Upload timed out — check your connection and try a smaller file.");
+    }
+    throw err;
+  }
 
   return publicUrlFor(key);
 }

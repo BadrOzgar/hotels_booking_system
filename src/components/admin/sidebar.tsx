@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  Waves,
   LayoutDashboard,
   BedDouble,
   CalendarCheck,
@@ -42,12 +42,14 @@ export function AdminSidebar({
   return (
     <aside className="sticky top-0 flex h-screen w-[250px] shrink-0 flex-col border-r border-[#ECEDF1] bg-white p-4">
       <div className="flex items-center gap-2.5 px-2 py-1.5">
-        <div
-          className="flex size-[34px] items-center justify-center rounded-[11px]"
-          style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)", boxShadow: "0 4px 12px rgba(124,140,248,.3)" }}
-        >
-          <Waves className="size-[19px] text-white" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Meridian"
+          width={34}
+          height={34}
+          className="rounded-[11px]"
+          style={{ boxShadow: "0 4px 12px rgba(124,140,248,.3)" }}
+        />
         <div>
           <div className="text-base leading-none font-bold tracking-[-.02em]">Meridian</div>
           <div className="mt-[3px] text-[11.5px] font-medium text-[#9CA3AF]">Admin workspace</div>

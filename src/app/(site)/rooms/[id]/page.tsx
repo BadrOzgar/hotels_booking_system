@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Lock,
 } from "lucide-react";
-import { getRoomType } from "@/lib/data/room-types";
+import { getRoomType, getRoomTypeUnavailableDates } from "@/lib/data/room-types";
 import { computePricing, nightsBetween, formatCurrency } from "@/lib/pricing";
 import { formatBeds } from "@/lib/meridian-data";
 import { today } from "@/lib/data/dashboard";
@@ -47,7 +47,7 @@ export default async function RoomDetailPage({
 }) {
   const { id } = await params;
   const search = await searchParams;
-  const room = await getRoomType(id);
+  const [room, unavailableDates] = await Promise.all([getRoomType(id), getRoomTypeUnavailableDates(id)]);
   if (!room) notFound();
 
   const checkinValue = search.checkin || defaultIso(0);
@@ -57,11 +57,12 @@ export default async function RoomDetailPage({
   const roomsCount = Math.max(1, Number(search.rooms) || 1);
 
   const nights = nightsBetween(new Date(`${checkinValue}T15:00:00`), new Date(`${checkoutValue}T11:00:00`));
+  // Guest checkout is pay-at-hotel only — fees/taxes are settled with the front desk, not charged here.
   const pricing = computePricing({
     pricePerNight: Number(room.basePricePerNight),
     nights,
-    serviceFeeCents: room.hotel.serviceFeeCents,
-    taxRatePercent: Number(room.hotel.taxRatePercent),
+    serviceFeeCents: 0,
+    taxRatePercent: 0,
   });
 
   const forwardParams = new URLSearchParams({
@@ -136,7 +137,16 @@ export default async function RoomDetailPage({
 
           <div className="my-8 h-px bg-[#F0F1F4]" />
           <h2 className="text-[22px] font-bold tracking-[-.02em]">Availability</h2>
-          <AvailabilityCalendar />
+          <p className="mt-2 text-[13.5px] font-medium text-[#9CA3AF]">
+            Select a check-in and check-out date to see live pricing for your stay.
+          </p>
+          <AvailabilityCalendar
+            pathname={`/rooms/${room.id}`}
+            checkIn={checkinValue}
+            checkOut={checkoutValue}
+            unavailableDates={unavailableDates}
+            otherParams={{ adults: String(adults), children: String(children), rooms: String(roomsCount) }}
+          />
 
           <div className="my-8 h-px bg-[#F0F1F4]" />
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -215,20 +225,15 @@ export default async function RoomDetailPage({
               </span>
               <span className="font-semibold text-[#1F2937]">{formatCurrency(pricing.base)}</span>
             </div>
-            <div className="flex justify-between text-[14.5px] font-medium text-[#6B7280]">
-              <span>Service fee</span>
-              <span className="font-semibold text-[#1F2937]">{formatCurrency(pricing.serviceFee)}</span>
-            </div>
-            <div className="flex justify-between text-[14.5px] font-medium text-[#6B7280]">
-              <span>Taxes</span>
-              <span className="font-semibold text-[#1F2937]">{formatCurrency(pricing.tax)}</span>
-            </div>
           </div>
           <div className="my-[18px] h-px bg-[#F0F1F4]" />
           <div className="flex items-baseline justify-between">
             <span className="text-base font-bold">Total</span>
             <span className="text-2xl font-extrabold tracking-[-.02em]">{formatCurrency(pricing.total)}</span>
           </div>
+          <p className="mt-1.5 text-[12.5px] font-medium text-[#9CA3AF]">
+            Fees and taxes, if any, are settled with the front desk at check-in.
+          </p>
           <Link
             href={`/booking/${room.id}${searchParamsString}`}
             className="btnp mt-5 block w-full rounded-[15px] py-4 text-center text-base font-bold text-white"

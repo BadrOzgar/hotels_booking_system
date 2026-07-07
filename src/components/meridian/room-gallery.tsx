@@ -35,9 +35,9 @@ export function RoomGallery({ room }: { room: { gradient: string; images?: { url
   const remaining = slides.length - 3;
 
   return (
-    <div className="mt-5 grid h-auto grid-cols-1 gap-3 md:h-[440px] md:grid-cols-[2fr_1fr]">
+    <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr]">
       <div
-        className="relative overflow-hidden rounded-[22px]"
+        className="relative h-[280px] overflow-hidden rounded-[22px] md:h-[440px]"
         style={"gradient" in slides[index] ? { background: slides[index].gradient } : undefined}
       >
         <MediaSlide slide={slides[index]} large />
@@ -67,7 +67,7 @@ export function RoomGallery({ room }: { room: { gradient: string; images?: { url
           <ChevronRight className="size-5" />
         </button>
       </div>
-      <div className="grid grid-rows-2 gap-3">
+      <div className="hidden grid-rows-2 gap-3 md:grid md:h-[440px]">
         <button
           type="button"
           onClick={() => setIndex(thumb1)}

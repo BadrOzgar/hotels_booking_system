@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Waves, LayoutDashboard, Building2, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, LogOut } from "lucide-react";
 import { logout } from "@/app/admin/actions";
 
 const active = { background: "#F3F5FF", color: "#4A5AE0", fontWeight: 600 };
@@ -16,12 +17,14 @@ export function SuperAdminSidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-[250px] shrink-0 flex-col border-r border-[#ECEDF1] bg-white p-4">
       <div className="flex items-center gap-2.5 px-2 py-1.5">
-        <div
-          className="flex size-[34px] items-center justify-center rounded-[11px]"
-          style={{ background: "linear-gradient(135deg,#1F2937,#4A5AE0)", boxShadow: "0 4px 12px rgba(31,41,55,.3)" }}
-        >
-          <Waves className="size-[19px] text-white" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Meridian"
+          width={34}
+          height={34}
+          className="rounded-[11px]"
+          style={{ boxShadow: "0 4px 12px rgba(31,41,55,.3)" }}
+        />
         <div>
           <div className="text-base leading-none font-bold tracking-[-.02em]">Meridian</div>
           <div className="mt-[3px] text-[11.5px] font-medium text-[#9CA3AF]">Platform admin</div>

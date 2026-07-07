@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, CalendarPlus } from "lucide-react";
 import { bookingStatusTokens, formatStatusLabel } from "@/lib/meridian-data";
 import { CrudDrawer } from "@/components/admin/crud-drawer";
 import { GuestForm } from "@/components/admin/guest-form";
+import { AddBookingForm } from "@/components/admin/add-booking-form";
 import { createGuestAction, updateGuestAction, getGuestAction } from "@/app/admin/guests/actions";
 
 const AVATAR_GRADIENTS = [
@@ -20,20 +21,27 @@ const AVATAR_GRADIENTS = [
 
 type GuestRow = {
   id: string;
+  firstName: string;
+  lastName: string;
   name: string;
   initials: string;
+  email: string;
+  phone: string | null;
   stays: number;
   lastBookingId?: string;
   lastStatus?: string;
 };
 
+type RoomOption = { id: string; name: string; basePricePerNight: number; capacity: number };
+
 type EditGuest = Awaited<ReturnType<typeof getGuestAction>>;
 
-export function AdminGuestsTable({ guests }: { guests: GuestRow[] }) {
+export function AdminGuestsTable({ guests, roomOptions }: { guests: GuestRow[]; roomOptions: RoomOption[] }) {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editData, setEditData] = useState<EditGuest | null>(null);
+  const [bookGuest, setBookGuest] = useState<GuestRow | null>(null);
 
   async function openEdit(id: string) {
     setEditId(id);
@@ -68,7 +76,7 @@ export function AdminGuestsTable({ guests }: { guests: GuestRow[] }) {
         className="mt-5 overflow-hidden rounded-[20px] border border-[#E7E8EC] bg-white"
         style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
       >
-        <div className="hidden grid-cols-[1.6fr_1fr_1fr_1fr_90px] gap-4 bg-[#FBFBFC] px-6 py-4 text-xs font-bold tracking-[.04em] text-[#9CA3AF] uppercase lg:grid">
+        <div className="hidden grid-cols-[1.6fr_1fr_1fr_1fr_130px] gap-4 bg-[#FBFBFC] px-6 py-4 text-xs font-bold tracking-[.04em] text-[#9CA3AF] uppercase lg:grid">
           <span>Guest</span>
           <span>Stays</span>
           <span>Last status</span>
@@ -85,7 +93,7 @@ export function AdminGuestsTable({ guests }: { guests: GuestRow[] }) {
           return (
             <div
               key={g.id}
-              className="rowh grid grid-cols-2 items-center gap-4 border-b border-[#F5F6F8] px-6 py-3.5 last:border-b-0 lg:grid-cols-[1.6fr_1fr_1fr_1fr_90px]"
+              className="rowh grid grid-cols-2 items-center gap-4 border-b border-[#F5F6F8] px-6 py-3.5 last:border-b-0 lg:grid-cols-[1.6fr_1fr_1fr_1fr_130px]"
             >
               <div className="flex items-center gap-2.5">
                 <div
@@ -119,14 +127,24 @@ export function AdminGuestsTable({ guests }: { guests: GuestRow[] }) {
               ) : (
                 <span className="text-sm text-[#9CA3AF]">—</span>
               )}
-              <button
-                type="button"
-                onClick={() => openEdit(g.id)}
-                aria-label="Edit customer"
-                className="ghost flex size-8 cursor-pointer items-center justify-center rounded-lg border border-[#E7E8EC]"
-              >
-                <Pencil className="size-[15px] text-[#6B7280]" />
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setBookGuest(g)}
+                  aria-label="Book a room for this customer"
+                  className="ghost flex size-8 cursor-pointer items-center justify-center rounded-lg border border-[#E7E8EC]"
+                >
+                  <CalendarPlus className="size-[15px] text-[#6B7280]" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openEdit(g.id)}
+                  aria-label="Edit customer"
+                  className="ghost flex size-8 cursor-pointer items-center justify-center rounded-lg border border-[#E7E8EC]"
+                >
+                  <Pencil className="size-[15px] text-[#6B7280]" />
+                </button>
+              </div>
             </div>
           );
         })}
@@ -158,6 +176,26 @@ export function AdminGuestsTable({ guests }: { guests: GuestRow[] }) {
           />
         ) : (
           <div className="py-10 text-center text-[13.5px] font-medium text-[#9CA3AF]">Loading…</div>
+        )}
+      </CrudDrawer>
+
+      <CrudDrawer
+        open={bookGuest !== null}
+        onOpenChange={(open) => !open && setBookGuest(null)}
+        title={bookGuest ? `Book a room for ${bookGuest.name}` : "Book a room"}
+      >
+        {bookGuest && (
+          <AddBookingForm
+            roomOptions={roomOptions}
+            initialGuest={{
+              firstName: bookGuest.firstName,
+              lastName: bookGuest.lastName,
+              email: bookGuest.email,
+              phone: bookGuest.phone,
+            }}
+            onSuccess={() => refreshAndClose(() => setBookGuest(null))}
+            onCancel={() => setBookGuest(null)}
+          />
         )}
       </CrudDrawer>
     </div>

@@ -1,9 +1,11 @@
 "use client";
 
+import { useRef, useState } from "react";
 import Image from "next/image";
-import { Check, Video } from "lucide-react";
+import { Check, Video, Loader2 } from "lucide-react";
 import { useDrawerForm } from "@/hooks/use-drawer-form";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
+import { compressImageFile } from "@/lib/compress-image";
 
 type Amenity = { id: string; label: string };
 
@@ -45,6 +47,22 @@ export function HotelForm({
 }) {
   const { error, pending, submit } = useDrawerForm(action, onSuccess);
   const selectedAmenityIds = initial?.amenityIds ?? [];
+  const [compressing, setCompressing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCompressing(true);
+    try {
+      const compressed = await compressImageFile(file);
+      const dt = new DataTransfer();
+      dt.items.add(compressed);
+      if (fileInputRef.current) fileInputRef.current.files = dt.files;
+    } finally {
+      setCompressing(false);
+    }
+  }
 
   return (
     <form action={submit}>
@@ -66,11 +84,15 @@ export function HotelForm({
               />
             ))}
           <input
+            ref={fileInputRef}
             name="coverImage"
             type="file"
             accept={MEDIA_ACCEPT}
-            className="flex-1 text-[13.5px] text-[#6B7280] file:mr-3 file:rounded-lg file:border-0 file:bg-[#F3F5FF] file:px-3.5 file:py-2 file:text-[13px] file:font-semibold file:text-[#4A5AE0]"
+            disabled={compressing}
+            onChange={handleFileSelected}
+            className="flex-1 text-[13.5px] text-[#6B7280] file:mr-3 file:rounded-lg file:border-0 file:bg-[#F3F5FF] file:px-3.5 file:py-2 file:text-[13px] file:font-semibold file:text-[#4A5AE0] disabled:opacity-60"
           />
+          {compressing && <Loader2 className="size-4 shrink-0 animate-spin text-[#7C8CF8]" />}
         </div>
       </div>
 
@@ -160,7 +182,7 @@ export function HotelForm({
         </button>
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || compressing}
           className="btnp flex items-center justify-center gap-2 rounded-[13px] px-[26px] py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
           style={{ background: "#7C8CF8", boxShadow: "0 6px 18px rgba(124,140,248,.3)" }}
         >

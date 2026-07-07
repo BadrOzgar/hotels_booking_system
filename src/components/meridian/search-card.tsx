@@ -5,17 +5,11 @@ import { useRouter } from "next/navigation";
 import { Users, BedDouble, Search, MapPin, Minus, Plus } from "lucide-react";
 import { DateRangePicker } from "./date-range-picker";
 
-function defaultIso(daysFromToday: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + daysFromToday);
-  return d.toISOString().slice(0, 10);
-}
-
-export function SearchCard() {
+export function SearchCard({ destinations = [] }: { destinations?: string[] }) {
   const router = useRouter();
   const [destination, setDestination] = useState("");
-  const [checkIn, setCheckIn] = useState(() => defaultIso(0));
-  const [checkOut, setCheckOut] = useState(() => defaultIso(3));
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
@@ -34,12 +28,16 @@ export function SearchCard() {
 
   function handleSearch() {
     const params = new URLSearchParams({
-      checkin: checkIn,
-      checkout: checkOut,
       adults: String(adults),
       children: String(children),
       rooms: String(roomsCount),
     });
+    // Only apply a date filter once the guest has actually picked both ends of the range —
+    // otherwise /rooms browses the full catalogue instead of a silently-defaulted date window.
+    if (checkIn && checkOut) {
+      params.set("checkin", checkIn);
+      params.set("checkout", checkOut);
+    }
     if (destination.trim()) params.set("destination", destination.trim());
     if (infants > 0) params.set("infants", String(infants));
     if (pets > 0) params.set("pets", String(pets));
@@ -72,8 +70,14 @@ export function SearchCard() {
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
               placeholder="Anywhere"
+              list="destination-suggestions"
               className="w-full border-0 bg-transparent p-0 text-[15px] font-semibold text-[#1F2937] outline-none placeholder:text-[#9CA3AF] placeholder:font-medium"
             />
+            <datalist id="destination-suggestions">
+              {destinations.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
           </div>
         </div>
 

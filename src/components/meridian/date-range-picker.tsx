@@ -58,9 +58,12 @@ export function DateRangePicker({ checkIn, checkOut, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const checkInDate = fromIso(checkIn);
-  const checkOutDate = fromIso(checkOut);
-  const [viewDate, setViewDate] = useState(() => new Date(checkInDate.getFullYear(), checkInDate.getMonth(), 1));
+  const checkInDate = checkIn ? fromIso(checkIn) : null;
+  const checkOutDate = checkOut ? fromIso(checkOut) : null;
+  const [viewDate, setViewDate] = useState(() => {
+    const base = checkInDate ?? new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -83,7 +86,7 @@ export function DateRangePicker({ checkIn, checkOut, onChange }: Props) {
       return;
     }
 
-    if (day <= checkInDate) {
+    if (checkInDate && day <= checkInDate) {
       onChange(toIso(day), "");
       return;
     }
@@ -162,10 +165,10 @@ export function DateRangePicker({ checkIn, checkOut, onChange }: Props) {
               if (!day) return <div key={i} />;
 
               const disabled = day < today;
-              const isStart = checkIn && isSameDay(day, checkInDate);
-              const isEnd = checkOut && isSameDay(day, checkOutDate);
+              const isStart = checkInDate && isSameDay(day, checkInDate);
+              const isEnd = checkOutDate && isSameDay(day, checkOutDate);
               const inRange =
-                checkIn && checkOut && day > checkInDate && day < checkOutDate;
+                checkInDate && checkOutDate && day > checkInDate && day < checkOutDate;
 
               let style: React.CSSProperties = { color: "#374151", background: "#fff", border: "1px solid #EEF0F4" };
               if (disabled) {

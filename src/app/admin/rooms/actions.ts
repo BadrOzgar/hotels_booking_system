@@ -14,6 +14,7 @@ import {
 import { requireHotelOwnerSession } from "@/lib/session";
 import { logActivity } from "@/lib/data/activity";
 import { uploadMedia } from "@/lib/s3";
+import { createAmenity, setDefaultAmenitiesForAllRooms } from "@/lib/data/content";
 
 async function handleMediaUpload(formData: FormData, roomTypeId: string): Promise<string | undefined> {
   const files = formData.getAll("media").filter((f): f is File => f instanceof File && f.size > 0);
@@ -74,6 +75,19 @@ export async function updateRoomTypeAction(unitId: string, formData: FormData): 
 export async function deleteRoomImageAction(imageId: string, roomTypeId: string): Promise<void> {
   const { hotelId } = await requireHotelOwnerSession();
   await deleteRoomTypeImage(imageId, roomTypeId, hotelId);
+  revalidatePath("/admin/rooms");
+}
+
+export async function createAmenityAction(label: string): Promise<{ id: string; label: string; icon: string | null }> {
+  await requireHotelOwnerSession();
+  const amenity = await createAmenity(label);
+  return { id: amenity.id, label: amenity.label, icon: amenity.icon };
+}
+
+export async function applyDefaultAmenitiesAction(amenityIds: string[]): Promise<void> {
+  const { userId, hotelId } = await requireHotelOwnerSession();
+  await setDefaultAmenitiesForAllRooms(hotelId, amenityIds);
+  await logActivity({ action: "room.amenities_defaulted", userId, hotelId, metadata: { amenityIds } });
   revalidatePath("/admin/rooms");
 }
 
