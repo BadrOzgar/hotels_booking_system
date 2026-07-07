@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "room_types" ADD COLUMN     "category" TEXT NOT NULL DEFAULT 'Room';

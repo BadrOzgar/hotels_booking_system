@@ -3,18 +3,49 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, Bell, Plus, ChevronDown, LogOut, Globe } from "lucide-react";
-import { logout } from "@/app/admin/actions";
+import { logout, getNewBookingNotificationsAction, type LiveNotification } from "@/app/admin/actions";
 
-const notifications = [
-  { title: "New booking from Sofie Lind", time: "12 min ago" },
-  { title: "Coral Room marked for maintenance", time: "1 hour ago" },
-  { title: "Daniel Reyes checked in", time: "3 hours ago" },
-];
+const POLL_INTERVAL_MS = 15_000;
 
-export function AdminTopbar() {
+/** Synthesizes a short two-tone "ding" with the Web Audio API — no audio asset to ship or host. */
+function playDing() {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.16, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+    osc.onended = () => ctx.close();
+  } catch {
+    // Non-fatal — some browsers block audio until the user has interacted with the page.
+  }
+}
+
+export function AdminTopbar({
+  ownerName,
+  ownerEmail,
+  quickAddHref = "/admin/rooms",
+  notifications: initialNotifications = [],
+}: {
+  ownerName: string;
+  ownerEmail: string;
+  quickAddHref?: string | null;
+  notifications?: LiveNotification[];
+}) {
   const [openNotifications, setOpenNotifications] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
+  const [notifications, setNotifications] = useState<LiveNotification[]>(initialNotifications);
+  const [unseenCount, setUnseenCount] = useState(0);
+  const [ringing, setRinging] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const sinceRef = useRef(new Date().toISOString());
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -26,6 +57,38 @@ export function AdminTopbar() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function poll() {
+      const result = await getNewBookingNotificationsAction(sinceRef.current);
+      if (cancelled || result.count === 0) return;
+
+      sinceRef.current = new Date().toISOString();
+      setNotifications((prev) => [...result.notifications, ...prev].slice(0, 15));
+      setUnseenCount((prev) => prev + result.count);
+      setRinging(true);
+      playDing();
+      if (typeof navigator.vibrate === "function") navigator.vibrate([80, 40, 80]);
+      setTimeout(() => setRinging(false), 700);
+    }
+
+    const interval = setInterval(poll, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  function toggleNotifications() {
+    setOpenNotifications((v) => {
+      const next = !v;
+      if (next) setUnseenCount(0);
+      return next;
+    });
+    setOpenProfile(false);
+  }
 
   return (
     <div
@@ -44,37 +107,51 @@ export function AdminTopbar() {
         <div className="relative">
           <button
             type="button"
-            onClick={() => {
-              setOpenNotifications((v) => !v);
-              setOpenProfile(false);
-            }}
-            className="relative flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#E7E8EC] bg-white"
+            onClick={toggleNotifications}
+            aria-label="Notifications"
+            className={`relative flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#E7E8EC] bg-white ${ringing ? "bell-ring" : ""}`}
           >
             <Bell className="size-[18px] text-[#6B7280]" />
-            <span className="absolute top-2.5 right-2.5 size-2 rounded-full border-2 border-white bg-[#F2A3A3]" />
+            {(unseenCount > 0 || notifications.length > 0) && (
+              <span
+                className="absolute top-2 right-2 flex items-center justify-center rounded-full border-2 border-white bg-[#F2A3A3] text-[9px] font-bold text-white"
+                style={unseenCount > 0 ? { minWidth: 16, height: 16, padding: "0 3px" } : { width: 8, height: 8 }}
+              >
+                {unseenCount > 0 ? Math.min(unseenCount, 9) + (unseenCount > 9 ? "+" : "") : ""}
+              </span>
+            )}
           </button>
           {openNotifications && (
             <div
-              className="absolute top-[calc(100%+8px)] right-0 w-[300px] rounded-2xl border border-[#E7E8EC] bg-white p-2"
+              className="absolute top-[calc(100%+8px)] right-0 w-[320px] rounded-2xl border border-[#E7E8EC] bg-white p-2"
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.12)" }}
             >
               <div className="px-3 py-2 text-[13px] font-bold text-[#1F2937]">Notifications</div>
-              {notifications.map((n) => (
-                <div key={n.title} className="rowh rounded-xl px-3 py-2.5">
-                  <div className="text-[13.5px] font-semibold text-[#374151]">{n.title}</div>
-                  <div className="mt-0.5 text-[12px] font-medium text-[#9CA3AF]">{n.time}</div>
+              {notifications.length === 0 && (
+                <div className="px-3 py-4 text-center text-[13px] font-medium text-[#9CA3AF]">
+                  No notifications yet.
                 </div>
-              ))}
+              )}
+              <div className="max-h-[320px] overflow-y-auto">
+                {notifications.map((n, i) => (
+                  <div key={i} className="rowh rounded-xl px-3 py-2.5">
+                    <div className="text-[13.5px] font-semibold text-[#374151]">{n.title}</div>
+                    <div className="mt-0.5 text-[12px] font-medium text-[#9CA3AF]">{n.time}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
-        <Link
-          href="/admin/rooms/new"
-          aria-label="Add new room"
-          className="flex size-10 items-center justify-center rounded-xl border border-[#E7E8EC] bg-white"
-        >
-          <Plus className="size-[18px] text-[#6B7280]" />
-        </Link>
+        {quickAddHref && (
+          <Link
+            href={quickAddHref}
+            aria-label="Manage rooms"
+            className="flex size-10 items-center justify-center rounded-xl border border-[#E7E8EC] bg-white"
+          >
+            <Plus className="size-[18px] text-[#6B7280]" />
+          </Link>
+        )}
         <div className="relative">
           <button
             type="button"
@@ -88,7 +165,12 @@ export function AdminTopbar() {
               className="flex size-[38px] items-center justify-center rounded-full text-sm font-bold text-white"
               style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)" }}
             >
-              EM
+              {ownerName
+                .split(" ")
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
             </div>
             <ChevronDown className="size-4 text-[#9CA3AF]" />
           </button>
@@ -98,8 +180,8 @@ export function AdminTopbar() {
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.12)" }}
             >
               <div className="px-3 py-2.5">
-                <div className="text-[13.5px] font-bold">Elena Marceau</div>
-                <div className="text-xs font-medium text-[#9CA3AF]">elena@meridian.co</div>
+                <div className="text-[13.5px] font-bold">{ownerName}</div>
+                <div className="text-xs font-medium text-[#9CA3AF]">{ownerEmail}</div>
               </div>
               <Link
                 href="/"

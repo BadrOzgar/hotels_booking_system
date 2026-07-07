@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Waves } from "lucide-react";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -7,12 +7,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-8 pt-14 pb-10 sm:grid-cols-2 md:grid-cols-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div
-              className="flex size-8 items-center justify-center rounded-[10px]"
-              style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)" }}
-            >
-              <Waves className="size-[18px] text-white" />
-            </div>
+            <Image src="/logo.png" alt="Meridian" width={32} height={32} className="rounded-[10px]" />
             <span className="text-lg font-bold text-[#1F2937]">Meridian</span>
           </div>
           <p className="mt-4 max-w-[260px] text-sm leading-relaxed text-[#9CA3AF]">
@@ -23,7 +18,7 @@ export function Footer() {
           <div className="text-[13px] font-bold text-[#1F2937]">Hotel</div>
           <div className="mt-4 flex flex-col gap-[11px] text-sm font-medium text-[#6B7280]">
             <Link href="/rooms" className="navlink">Rooms</Link>
-            <Link href="/gallery" className="navlink">Gallery</Link>
+            <Link href="/hotels" className="navlink">Hotels</Link>
             <span className="navlink">Dining</span>
             <span className="navlink">Spa</span>
           </div>

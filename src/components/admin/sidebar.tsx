@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  Waves,
   LayoutDashboard,
   BedDouble,
   CalendarCheck,
@@ -17,7 +17,13 @@ import { logout } from "@/app/admin/actions";
 const active = { background: "#F3F5FF", color: "#4A5AE0", fontWeight: 600 };
 const inactive = { background: "transparent", color: "#6B7280", fontWeight: 500 };
 
-export function AdminSidebar({ pendingBookings }: { pendingBookings: number }) {
+export function AdminSidebar({
+  pendingBookings,
+  ownerName,
+}: {
+  pendingBookings: number;
+  ownerName: string;
+}) {
   const pathname = usePathname();
   const isDash = pathname === "/admin";
   const isRooms = pathname.startsWith("/admin/rooms");
@@ -26,15 +32,24 @@ export function AdminSidebar({ pendingBookings }: { pendingBookings: number }) {
   const isGuests = pathname.startsWith("/admin/guests");
   const isSettings = pathname.startsWith("/admin/settings");
 
+  const initials = ownerName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <aside className="sticky top-0 flex h-screen w-[250px] shrink-0 flex-col border-r border-[#ECEDF1] bg-white p-4">
       <div className="flex items-center gap-2.5 px-2 py-1.5">
-        <div
-          className="flex size-[34px] items-center justify-center rounded-[11px]"
-          style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)", boxShadow: "0 4px 12px rgba(124,140,248,.3)" }}
-        >
-          <Waves className="size-[19px] text-white" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Meridian"
+          width={34}
+          height={34}
+          className="rounded-[11px]"
+          style={{ boxShadow: "0 4px 12px rgba(124,140,248,.3)" }}
+        />
         <div>
           <div className="text-base leading-none font-bold tracking-[-.02em]">Meridian</div>
           <div className="mt-[3px] text-[11.5px] font-medium text-[#9CA3AF]">Admin workspace</div>
@@ -117,11 +132,11 @@ export function AdminSidebar({ pendingBookings }: { pendingBookings: number }) {
             className="flex size-[38px] items-center justify-center rounded-full text-sm font-bold text-white"
             style={{ background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)" }}
           >
-            EM
+            {initials}
           </div>
           <div>
-            <div className="text-[13.5px] font-bold">Elena Marceau</div>
-            <div className="text-xs font-medium text-[#9CA3AF]">Manager</div>
+            <div className="text-[13.5px] font-bold">{ownerName}</div>
+            <div className="text-xs font-medium text-[#9CA3AF]">Hotel Owner</div>
           </div>
         </div>
       </div>

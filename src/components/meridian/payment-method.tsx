@@ -49,12 +49,15 @@ export function PaymentMethod() {
         </button>
       </div>
 
+      <input type="hidden" name="paymentMethod" value={method === "card" ? "CARD" : "PAY_AT_HOTEL"} />
+
       {method === "card" ? (
         <>
           <div className="mt-[18px]">
             <label className="text-[13px] font-semibold text-[#374151]">Card number</label>
             <div className="relative mt-2">
               <input
+                name="cardNumber"
                 defaultValue="4242 4242 4242 4242"
                 className="w-full rounded-[13px] border border-[#E7E8EC] bg-[#FCFCFD] px-[15px] py-3.5 text-[15px] outline-none"
               />

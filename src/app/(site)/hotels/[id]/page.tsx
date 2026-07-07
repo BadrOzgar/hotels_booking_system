@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, MapPin, Star } from "lucide-react";
 import { RoomsBrowser } from "@/components/meridian/rooms-browser";
-import { getHotel, getHotelRooms, hotels } from "@/lib/meridian-data";
-
-export function generateStaticParams() {
-  return hotels.map((h) => ({ id: h.id }));
-}
+import { getHotelWithRoomTypes } from "@/lib/data/hotels";
+import { formatBeds } from "@/lib/meridian-data";
+import { coverStyle } from "@/lib/media";
+import type { PublicRoomListing } from "@/lib/data/room-types";
 
 export default async function HotelDetailPage({
   params,
@@ -14,24 +13,40 @@ export default async function HotelDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const hotel = getHotel(id);
+  const hotel = await getHotelWithRoomTypes(id);
   if (!hotel) notFound();
 
-  const hotelRooms = getHotelRooms(hotel.id);
+  const hotelRooms: PublicRoomListing[] = hotel.roomTypes.map((rt) => ({
+    id: rt.id,
+    hotelId: hotel.id,
+    hotel: { id: hotel.id, name: hotel.name, city: hotel.city, country: hotel.country },
+    name: rt.name,
+    type: rt.category,
+    description: rt.description,
+    price: Number(rt.basePricePerNight),
+    cap: rt.capacity,
+    size: rt.sizeSqm,
+    bath: rt.bathrooms,
+    gradient: rt.gradient,
+    coverImageUrl: rt.images[0]?.url ?? null,
+    beds: formatBeds(rt.beds),
+    rating: hotel.rating,
+    reviews: hotel.reviewCount,
+  }));
 
   return (
     <div className="fu mx-auto max-w-[1240px] px-8 pt-10 pb-20">
       <div className="flex items-center gap-2 text-[13.5px] font-medium text-[#9CA3AF]">
         <Link href="/" className="navlink">Home</Link>
         <ChevronRight className="size-[15px]" />
-        <Link href="/gallery" className="navlink">Gallery</Link>
+        <Link href="/hotels" className="navlink">Hotels</Link>
         <ChevronRight className="size-[15px]" />
         <span className="text-[#6B7280]">{hotel.name}</span>
       </div>
 
       <div
-        className="relative mt-5 h-[280px] rounded-[22px]"
-        style={{ background: hotel.gradient, boxShadow: "0 10px 30px rgba(16,24,40,.08)" }}
+        className="relative mt-5 h-[280px] rounded-[22px] bg-cover bg-center"
+        style={{ ...coverStyle(hotel.images[0]?.url, hotel.gradient), boxShadow: "0 10px 30px rgba(16,24,40,.08)" }}
       >
         {hotel.tag && (
           <div
@@ -48,13 +63,13 @@ export default async function HotelDetailPage({
           <h1 className="m-0 text-4xl font-extrabold tracking-[-.03em]">{hotel.name}</h1>
           <div className="mt-2.5 flex items-center gap-1.5 text-[15px] font-medium text-[#6B7280]">
             <MapPin className="size-4 text-[#9CA3AF]" />
-            {hotel.location}
+            {hotel.city}, {hotel.country}
           </div>
           <div className="mt-2 flex items-center gap-1.5">
             <Star className="size-4 fill-[#F6D68A] text-[#F6D68A]" />
-            <span className="text-sm font-bold">{hotel.rating}</span>
+            <span className="text-sm font-bold">{hotel.rating || "New"}</span>
             <span className="text-sm font-medium text-[#9CA3AF]">
-              &middot; {hotel.reviews} reviews
+              &middot; {hotel.reviewCount} reviews
             </span>
           </div>
           <p className="mt-3.5 max-w-[640px] text-[15px] leading-[1.6] text-[#6B7280]">

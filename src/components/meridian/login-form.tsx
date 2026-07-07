@@ -9,15 +9,11 @@ export function LoginForm() {
 
   return (
     <form action={action}>
-      <div className="mt-6 rounded-xl border border-[#E7E8EC] bg-[#FAFAFB] px-3.5 py-2.5 text-[12.5px] font-medium text-[#9CA3AF]">
-        Demo mode — credentials are pre-filled, just hit sign in.
-      </div>
-      <div className="mt-5">
+      <div className="mt-6">
         <label className="text-[13px] font-semibold text-[#374151]">Email address</label>
         <input
           name="email"
           type="email"
-          defaultValue="demo@meridian.co"
           required
           className="mt-2 w-full rounded-[13px] border border-[#E7E8EC] bg-[#FCFCFD] px-4 py-3.5 text-[15px] outline-none"
         />
@@ -33,7 +29,6 @@ export function LoginForm() {
           <input
             name="password"
             type="password"
-            defaultValue="demo1234"
             required
             className="w-full rounded-[13px] border border-[#E7E8EC] bg-[#FCFCFD] px-4 py-3.5 text-[15px] outline-none"
           />
