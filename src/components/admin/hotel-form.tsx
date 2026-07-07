@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { Check, Video, Loader2 } from "lucide-react";
+import { Check, Video, Loader2, MapPin } from "lucide-react";
 import { useDrawerForm } from "@/hooks/use-drawer-form";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
 import { compressImageFile } from "@/lib/compress-image";
+import { previewMapsLinkAction, type ResolvedMapsLink } from "@/app/admin/settings/actions";
+import { LocationMap } from "@/components/meridian/location-map";
 
 type Amenity = { id: string; label: string };
 
@@ -49,6 +51,27 @@ export function HotelForm({
   const selectedAmenityIds = initial?.amenityIds ?? [];
   const [compressing, setCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mapsLink, setMapsLink] = useState("");
+  const [preview, setPreview] = useState<ResolvedMapsLink | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
+
+  async function handleLocate() {
+    if (!mapsLink.trim()) return;
+    setLocating(true);
+    setLocateError(null);
+    try {
+      const resolved = await previewMapsLinkAction(mapsLink);
+      if (!resolved) {
+        setPreview(null);
+        setLocateError("Couldn't read a location from that link — check it's a valid Google Maps link.");
+      } else {
+        setPreview(resolved);
+      }
+    } finally {
+      setLocating(false);
+    }
+  }
 
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -115,12 +138,52 @@ export function HotelForm({
       </div>
 
       <h2 className="mt-6 text-[13px] font-bold tracking-[.04em] text-[#9CA3AF] uppercase">Location</h2>
-      <div className="mt-3 grid grid-cols-1 gap-[14px] sm:grid-cols-2">
-        <Field label="City" name="city" defaultValue={initial?.city} />
-        <Field label="Country" name="country" defaultValue={initial?.country} />
-        <div className="sm:col-span-2">
-          <Field label="Address" name="address" defaultValue={initial?.address} />
+      {initial?.address && (
+        <div className="mt-3 flex items-start gap-2 rounded-xl bg-[#F7F8FA] px-3.5 py-3 text-[13.5px] font-medium text-[#374151]">
+          <MapPin className="mt-0.5 size-4 shrink-0 text-[#9CA3AF]" />
+          <span>
+            Current location: {initial.address}, {initial.city}, {initial.country}
+          </span>
         </div>
+      )}
+      <div className="mt-3">
+        <label className="text-[13px] font-semibold text-[#374151]">
+          {initial?.address ? "Update location" : "Google Maps link"}
+          {initial?.address && <span className="font-medium text-[#9CA3AF]"> (optional)</span>}
+        </label>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            name="mapsLink"
+            value={mapsLink}
+            onChange={(e) => setMapsLink(e.target.value)}
+            placeholder="Paste a Google Maps link"
+            className="flex-1 rounded-xl border border-[#E7E8EC] bg-[#FCFCFD] px-3.5 py-3 text-[15px] outline-none"
+          />
+          <button
+            type="button"
+            onClick={handleLocate}
+            disabled={locating || !mapsLink.trim()}
+            className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#E7E8EC] bg-white px-3.5 py-3 text-[13px] font-semibold text-[#374151] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {locating ? <Loader2 className="size-3.5 animate-spin" /> : <MapPin className="size-3.5" />}
+            {locating ? "Locating…" : "Locate"}
+          </button>
+        </div>
+        <p className="mt-1.5 text-[12px] font-medium text-[#9CA3AF]">
+          Open the hotel&apos;s exact location in Google Maps, share it, and paste the link here.
+          {initial?.address && " Leave blank to keep the current location."}
+        </p>
+        {locateError && <p className="mt-1.5 text-[12.5px] font-medium text-[#D96A6A]">{locateError}</p>}
+        {preview && (
+          <>
+            <p className="mt-2.5 text-[13px] font-semibold text-[#374151]">
+              Detected: {preview.address}, {preview.city}, {preview.country}
+            </p>
+            <div className="mt-2 h-[200px] overflow-hidden rounded-xl border border-[#E7E8EC]">
+              <LocationMap lat={preview.lat} lng={preview.lng} label="Map preview" zoom={14} />
+            </div>
+          </>
+        )}
       </div>
 
       <h2 className="mt-6 text-[13px] font-bold tracking-[.04em] text-[#9CA3AF] uppercase">Policies &amp; pricing</h2>
@@ -197,6 +260,8 @@ function Field({
   label,
   name,
   defaultValue,
+  value,
+  onChange,
   type = "text",
   placeholder,
   required = true,
@@ -208,6 +273,8 @@ function Field({
   label: string;
   name: string;
   defaultValue?: string | number;
+  value?: string;
+  onChange?: (next: string) => void;
   type?: string;
   placeholder?: string;
   required?: boolean;
@@ -246,7 +313,9 @@ function Field({
       <input
         name={name}
         type={type}
-        defaultValue={defaultValue}
+        defaultValue={onChange ? undefined : defaultValue}
+        value={onChange ? value : undefined}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         placeholder={placeholder}
         required={required}
         min={min}

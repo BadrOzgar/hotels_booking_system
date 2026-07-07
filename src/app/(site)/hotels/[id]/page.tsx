@@ -5,6 +5,7 @@ import { RoomsBrowser } from "@/components/meridian/rooms-browser";
 import { getHotelWithRoomTypes } from "@/lib/data/hotels";
 import { formatBeds } from "@/lib/meridian-data";
 import { coverStyle } from "@/lib/media";
+import { LocationMap } from "@/components/meridian/location-map";
 import type { PublicRoomListing } from "@/lib/data/room-types";
 
 export default async function HotelDetailPage({
@@ -76,6 +77,23 @@ export default async function HotelDetailPage({
             {hotel.description}
           </p>
         </div>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-2xl font-bold tracking-[-.02em]">Location</h2>
+        <p className="mt-2 text-[14.5px] font-medium text-[#6B7280]">{hotel.address}, {hotel.city}, {hotel.country}</p>
+        {hotel.latitude != null && hotel.longitude != null ? (
+          <div
+            className="mt-4 h-[340px] overflow-hidden rounded-[20px] border border-[#E7E8EC]"
+            style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+          >
+            <LocationMap lat={hotel.latitude} lng={hotel.longitude} label={`Map showing the location of ${hotel.name}`} />
+          </div>
+        ) : (
+          <div className="mt-4 rounded-[20px] border border-[#E7E8EC] bg-[#FBFBFC] px-6 py-10 text-center text-[13.5px] font-medium text-[#9CA3AF]">
+            Map location coming soon.
+          </div>
+        )}
       </div>
 
       <div className="mt-10">

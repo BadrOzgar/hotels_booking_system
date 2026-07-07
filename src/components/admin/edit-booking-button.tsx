@@ -29,10 +29,10 @@ export function EditBookingButton({ booking }: { booking: BookingEditValues }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btns flex items-center gap-2 rounded-[13px] border border-[#E7E8EC] bg-white px-[18px] py-3 text-sm font-semibold text-[#1F2937]"
+        className="flex cursor-pointer items-center gap-1.5 rounded-[10px] px-3 py-[7px] text-[12.5px] font-semibold text-[#374151] hover:bg-[#F4F5F7]"
       >
-        <Pencil className="size-4" />
-        Edit booking
+        <Pencil className="size-[13px]" />
+        Edit
       </button>
       <CrudDrawer open={open} onOpenChange={setOpen} title="Edit booking" description={`Reference ${booking.confirmationCode}`}>
         <EditBookingForm booking={booking} onClose={() => setOpen(false)} />

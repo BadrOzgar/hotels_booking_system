@@ -173,7 +173,7 @@ export async function getAdminBooking(id: string, hotelId: string) {
     where: { id, hotelId },
     include: {
       hotel: true,
-      roomType: true,
+      roomType: { include: { images: { where: { isCover: true }, take: 1 } } },
       roomUnit: true,
       guest: { include: { _count: { select: { bookings: true } } } },
       payments: { orderBy: { createdAt: "desc" } },

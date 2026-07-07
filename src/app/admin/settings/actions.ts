@@ -6,6 +6,24 @@ import { updateHotel, setHotelCoverImage } from "@/lib/data/hotels";
 import { requireHotelOwnerSession } from "@/lib/session";
 import { logActivity } from "@/lib/data/activity";
 import { uploadMedia } from "@/lib/s3";
+import { resolveGoogleMapsLink } from "@/lib/maps-link";
+import { reverseGeocode } from "@/lib/geocoding";
+
+export type ResolvedMapsLink = { lat: number; lng: number; city: string; country: string; address: string };
+
+/** Resolves a pasted Google Maps link to coordinates + city/country/address for the "Locate on map" preview. */
+export async function previewMapsLinkAction(mapsLink: string): Promise<ResolvedMapsLink | null> {
+  await requireHotelOwnerSession();
+  return resolveMapsLink(mapsLink);
+}
+
+async function resolveMapsLink(mapsLink: string): Promise<ResolvedMapsLink | null> {
+  const coords = await resolveGoogleMapsLink(mapsLink);
+  if (!coords) return null;
+  const location = await reverseGeocode(coords.lat, coords.lng);
+  if (!location) return null;
+  return { ...coords, ...location };
+}
 
 export async function updateMyHotelAction(formData: FormData): Promise<string | undefined> {
   const { userId, hotelId } = await requireHotelOwnerSession();
@@ -13,9 +31,7 @@ export async function updateMyHotelAction(formData: FormData): Promise<string | 
   const parsed = hotelSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description"),
-    city: formData.get("city"),
-    country: formData.get("country"),
-    address: formData.get("address"),
+    mapsLink: formData.get("mapsLink"),
     starRating: formData.get("starRating"),
     currency: formData.get("currency"),
     checkInTime: formData.get("checkInTime"),
@@ -31,7 +47,13 @@ export async function updateMyHotelAction(formData: FormData): Promise<string | 
   });
   if (!parsed.success) return parsed.error.issues[0]?.message ?? "Invalid input.";
 
-  await updateHotel(hotelId, parsed.data);
+  let location;
+  if (parsed.data.mapsLink) {
+    location = await resolveMapsLink(parsed.data.mapsLink);
+    if (!location) return "Couldn't read a location from that Google Maps link. Please check it and try again.";
+  }
+
+  await updateHotel(hotelId, parsed.data, location);
   await logActivity({ action: "hotel.updated", userId, hotelId });
 
   const file = formData.get("coverImage");

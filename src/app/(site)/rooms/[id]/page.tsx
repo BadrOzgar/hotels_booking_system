@@ -12,25 +12,12 @@ import {
   CigaretteOff,
   VolumeX,
   ShieldCheck,
-  Lock,
 } from "lucide-react";
 import { getRoomType, getRoomTypeUnavailableDates } from "@/lib/data/room-types";
-import { computePricing, nightsBetween, formatCurrency } from "@/lib/pricing";
 import { formatBeds } from "@/lib/meridian-data";
-import { today } from "@/lib/data/dashboard";
-import { AvailabilityCalendar } from "@/components/meridian/availability-calendar";
 import { RoomGallery } from "@/components/meridian/room-gallery";
-
-function defaultIso(daysFromToday: number) {
-  const d = today();
-  d.setDate(d.getDate() + daysFromToday);
-  return d.toISOString().slice(0, 10);
-}
-
-function formatDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+import { RoomBookingPanel } from "@/components/meridian/room-booking-panel";
+import { LocationMap } from "@/components/meridian/location-map";
 
 export default async function RoomDetailPage({
   params,
@@ -42,6 +29,8 @@ export default async function RoomDetailPage({
     checkout?: string;
     adults?: string;
     children?: string;
+    infants?: string;
+    pets?: string;
     rooms?: string;
   }>;
 }) {
@@ -50,29 +39,13 @@ export default async function RoomDetailPage({
   const [room, unavailableDates] = await Promise.all([getRoomType(id), getRoomTypeUnavailableDates(id)]);
   if (!room) notFound();
 
-  const checkinValue = search.checkin || defaultIso(0);
-  const checkoutValue = search.checkout || defaultIso(3);
+  const checkinValue = search.checkin ?? "";
+  const checkoutValue = search.checkout ?? "";
   const adults = Math.max(1, Number(search.adults) || 2);
   const children = Math.max(0, Number(search.children) || 0);
+  const infants = Math.max(0, Number(search.infants) || 0);
+  const pets = Math.max(0, Number(search.pets) || 0);
   const roomsCount = Math.max(1, Number(search.rooms) || 1);
-
-  const nights = nightsBetween(new Date(`${checkinValue}T15:00:00`), new Date(`${checkoutValue}T11:00:00`));
-  // Guest checkout is pay-at-hotel only — fees/taxes are settled with the front desk, not charged here.
-  const pricing = computePricing({
-    pricePerNight: Number(room.basePricePerNight),
-    nights,
-    serviceFeeCents: 0,
-    taxRatePercent: 0,
-  });
-
-  const forwardParams = new URLSearchParams({
-    checkin: checkinValue,
-    checkout: checkoutValue,
-    adults: String(adults),
-    children: String(children),
-    rooms: String(roomsCount),
-  });
-  const searchParamsString = `?${forwardParams.toString()}`;
 
   return (
     <div className="fu mx-auto max-w-[1240px] px-8 pt-8 pb-20">
@@ -136,17 +109,26 @@ export default async function RoomDetailPage({
           </div>
 
           <div className="my-8 h-px bg-[#F0F1F4]" />
-          <h2 className="text-[22px] font-bold tracking-[-.02em]">Availability</h2>
-          <p className="mt-2 text-[13.5px] font-medium text-[#9CA3AF]">
-            Select a check-in and check-out date to see live pricing for your stay.
+          <h2 className="text-[22px] font-bold tracking-[-.02em]">Location</h2>
+          <p className="mt-2 text-[14.5px] font-medium text-[#6B7280]">
+            {room.hotel.address}, {room.hotel.city}, {room.hotel.country}
           </p>
-          <AvailabilityCalendar
-            pathname={`/rooms/${room.id}`}
-            checkIn={checkinValue}
-            checkOut={checkoutValue}
-            unavailableDates={unavailableDates}
-            otherParams={{ adults: String(adults), children: String(children), rooms: String(roomsCount) }}
-          />
+          {room.hotel.latitude != null && room.hotel.longitude != null ? (
+            <div
+              className="mt-4 h-[300px] overflow-hidden rounded-[20px] border border-[#E7E8EC]"
+              style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+            >
+              <LocationMap
+                lat={room.hotel.latitude}
+                lng={room.hotel.longitude}
+                label={`Map showing the location of ${room.hotel.name}`}
+              />
+            </div>
+          ) : (
+            <div className="mt-4 rounded-[20px] border border-[#E7E8EC] bg-[#FBFBFC] px-6 py-10 text-center text-[13.5px] font-medium text-[#9CA3AF]">
+              Map location coming soon.
+            </div>
+          )}
 
           <div className="my-8 h-px bg-[#F0F1F4]" />
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -186,66 +168,18 @@ export default async function RoomDetailPage({
         </div>
 
         {/* STICKY PRICE SUMMARY */}
-        <div
-          className="sticky top-[92px] rounded-[22px] border border-[#E7E8EC] bg-white p-[26px]"
-          style={{ boxShadow: "0 12px 30px rgba(16,24,40,.08)" }}
-        >
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[30px] font-extrabold tracking-[-.02em]">
-              {formatCurrency(Number(room.basePricePerNight))}
-            </span>
-            <span className="text-[15px] font-medium text-[#9CA3AF]">/ night</span>
-          </div>
-          <div className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-[#E7E8EC]">
-            <div className="border-r border-[#E7E8EC] px-4 py-3.5">
-              <div className="text-[11.5px] font-bold tracking-[.04em] text-[#9CA3AF] uppercase">
-                Check in
-              </div>
-              <div className="mt-1 text-[14.5px] font-semibold">{formatDate(checkinValue)}</div>
-            </div>
-            <div className="px-4 py-3.5">
-              <div className="text-[11.5px] font-bold tracking-[.04em] text-[#9CA3AF] uppercase">
-                Check out
-              </div>
-              <div className="mt-1 text-[14.5px] font-semibold">{formatDate(checkoutValue)}</div>
-            </div>
-            <div className="col-span-2 border-t border-[#E7E8EC] px-4 py-3.5">
-              <div className="text-[11.5px] font-bold tracking-[.04em] text-[#9CA3AF] uppercase">
-                Guests
-              </div>
-              <div className="mt-1 text-[14.5px] font-semibold">
-                {adults} adults{children > 0 ? `, ${children} children` : ""}
-              </div>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-col gap-3">
-            <div className="flex justify-between text-[14.5px] font-medium text-[#6B7280]">
-              <span>
-                {formatCurrency(Number(room.basePricePerNight))} &times; {nights} nights
-              </span>
-              <span className="font-semibold text-[#1F2937]">{formatCurrency(pricing.base)}</span>
-            </div>
-          </div>
-          <div className="my-[18px] h-px bg-[#F0F1F4]" />
-          <div className="flex items-baseline justify-between">
-            <span className="text-base font-bold">Total</span>
-            <span className="text-2xl font-extrabold tracking-[-.02em]">{formatCurrency(pricing.total)}</span>
-          </div>
-          <p className="mt-1.5 text-[12.5px] font-medium text-[#9CA3AF]">
-            Fees and taxes, if any, are settled with the front desk at check-in.
-          </p>
-          <Link
-            href={`/booking/${room.id}${searchParamsString}`}
-            className="btnp mt-5 block w-full rounded-[15px] py-4 text-center text-base font-bold text-white"
-            style={{ background: "#7C8CF8", boxShadow: "0 6px 18px rgba(124,140,248,.3)" }}
-          >
-            Book now
-          </Link>
-          <div className="mt-3.5 flex items-center justify-center gap-1.5 text-[13px] font-medium text-[#9CA3AF]">
-            <Lock className="size-3.5" />
-            You won&apos;t be charged yet
-          </div>
-        </div>
+        <RoomBookingPanel
+          roomId={room.id}
+          pricePerNight={Number(room.basePricePerNight)}
+          unavailableDates={unavailableDates}
+          initialCheckIn={checkinValue}
+          initialCheckOut={checkoutValue}
+          initialAdults={adults}
+          initialChildren={children}
+          initialInfants={infants}
+          initialPets={pets}
+          roomsCount={roomsCount}
+        />
       </div>
     </div>
   );
