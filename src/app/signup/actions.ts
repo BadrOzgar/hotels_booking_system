@@ -7,8 +7,25 @@ import { prisma } from "@/lib/prisma";
 import { signupSchema } from "@/lib/validation";
 import { addHotelImages } from "@/lib/data/hotels";
 import { uploadMedia } from "@/lib/s3";
+import { resolveGoogleMapsLink } from "@/lib/maps-link";
+import { reverseGeocode } from "@/lib/geocoding";
 
 const MAX_SIGNUP_IMAGES = 3;
+
+export type ResolvedMapsLink = { lat: number; lng: number; city: string; country: string; address: string };
+
+/** Lets the "Locate on map" preview on the signup form check a Maps link resolves before creating the account. */
+export async function previewSignupMapsLinkAction(mapsLink: string): Promise<ResolvedMapsLink | null> {
+  return resolveMapsLink(mapsLink);
+}
+
+async function resolveMapsLink(mapsLink: string): Promise<ResolvedMapsLink | null> {
+  const coords = await resolveGoogleMapsLink(mapsLink);
+  if (!coords) return null;
+  const location = await reverseGeocode(coords.lat, coords.lng);
+  if (!location) return null;
+  return { ...coords, ...location };
+}
 
 export async function signupAction(
   _prevState: string | undefined,
@@ -19,16 +36,19 @@ export async function signupAction(
     email: formData.get("email"),
     password: formData.get("password"),
     hotelName: formData.get("hotelName"),
-    city: formData.get("city"),
-    country: formData.get("country"),
-    address: formData.get("address"),
+    mapsLink: formData.get("mapsLink"),
   });
   if (!parsed.success) return parsed.error.issues[0]?.message ?? "Please check your details and try again.";
 
-  const { ownerName, email, password, hotelName, city, country, address } = parsed.data;
+  const { ownerName, email, password, hotelName, mapsLink } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return "An account with this email already exists.";
+
+  // Resolved before the transaction opens — it's a network call, and shouldn't hold a DB
+  // transaction open.
+  const location = await resolveMapsLink(mapsLink);
+  if (!location) return "Couldn't read a location from that Google Maps link. Please check it and try again.";
 
   const passwordHash = await bcrypt.hash(password, 12);
   const code = await generateHotelCode(hotelName);
@@ -44,9 +64,11 @@ export async function signupAction(
         code,
         name: hotelName,
         description: `${hotelName} — newly onboarded on Meridian.`,
-        city,
-        country,
-        address,
+        city: location.city,
+        country: location.country,
+        address: location.address,
+        latitude: location.lat,
+        longitude: location.lng,
         cancellationPolicy: { create: { freeCancellationHours: 48, penaltyNights: 1 } },
         subscription: {
           create: { plan: "TRIAL", status: "TRIALING", trialEndsAt: new Date(Date.now() + 14 * 86_400_000) },

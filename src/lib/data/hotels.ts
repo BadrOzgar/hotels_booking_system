@@ -129,54 +129,20 @@ export async function getHotelWithRoomTypes(id: string) {
   return { ...hotel, rating: Math.round(rating * 10) / 10, reviewCount: hotel.reviews.length };
 }
 
-/** Creates a hotel for a brand-new owner (used only by the /signup flow). */
-export async function createHotelForOwner(ownerId: string, input: HotelInput) {
-  const code = await generateHotelCode(input.name);
+/** The hotel's location, always derived server-side from a pasted Google Maps link. */
+export type ResolvedLocation = { city: string; country: string; address: string; lat: number; lng: number };
 
-  return prisma.hotel.create({
-    data: {
-      ownerId,
-      code,
-      name: input.name,
-      description: input.description,
-      city: input.city,
-      country: input.country,
-      address: input.address,
-      starRating: input.starRating,
-      currency: input.currency,
-      checkInTime: input.checkInTime,
-      checkOutTime: input.checkOutTime,
-      serviceFeeCents: input.serviceFeeCents,
-      taxRatePercent: input.taxRatePercent,
-      tag: input.tag || null,
-      contactEmail: input.contactEmail || null,
-      contactPhone: input.contactPhone || null,
-      amenities: {
-        create: input.amenityIds.map((amenityId) => ({ amenityId })),
-      },
-      cancellationPolicy: {
-        create: {
-          freeCancellationHours: input.freeCancellationHours,
-          penaltyNights: input.penaltyNights,
-        },
-      },
-      subscription: {
-        create: { plan: "TRIAL", status: "TRIALING", trialEndsAt: new Date(Date.now() + 14 * 86_400_000) },
-      },
-    },
-  });
-}
-
-export async function updateHotel(id: string, input: HotelInput) {
+/** `location` is omitted when the owner didn't paste a new Maps link — the existing location is left untouched. */
+export async function updateHotel(id: string, input: HotelInput, location?: ResolvedLocation) {
   return prisma.$transaction(async (tx) => {
     await tx.hotel.update({
       where: { id },
       data: {
         name: input.name,
         description: input.description,
-        city: input.city,
-        country: input.country,
-        address: input.address,
+        ...(location
+          ? { city: location.city, country: location.country, address: location.address, latitude: location.lat, longitude: location.lng }
+          : {}),
         starRating: input.starRating,
         currency: input.currency,
         checkInTime: input.checkInTime,
@@ -202,22 +168,4 @@ export async function updateHotel(id: string, input: HotelInput) {
       create: { hotelId: id, freeCancellationHours: input.freeCancellationHours, penaltyNights: input.penaltyNights },
     });
   });
-}
-
-async function generateHotelCode(name: string): Promise<string> {
-  const base = name
-    .replace(/[^a-zA-Z\s]/g, "")
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 4) || "HTL";
-
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const candidate = attempt === 0 ? base : `${base}${attempt}`;
-    const existing = await prisma.hotel.findUnique({ where: { code: candidate } });
-    if (!existing) return candidate;
-  }
-  return `${base}${Date.now().toString().slice(-4)}`;
 }

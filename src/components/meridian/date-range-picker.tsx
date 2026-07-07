@@ -2,23 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-function toIso(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function fromIso(value: string) {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
+import { WEEKDAYS as weekdays, MONTHS as months, toIso, fromIso, isSameDay, buildMonthGrid } from "@/lib/calendar-grid";
 
 function formatLabel(value: string) {
   return fromIso(value).toLocaleDateString("en-US", {
@@ -26,26 +10,6 @@ function formatLabel(value: string) {
     day: "numeric",
     year: "numeric",
   });
-}
-
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function buildMonthGrid(viewYear: number, viewMonth: number) {
-  const firstDay = new Date(viewYear, viewMonth, 1);
-  const leadingBlanks = firstDay.getDay();
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-
-  const cells: (Date | null)[] = [];
-  for (let i = 0; i < leadingBlanks; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewYear, viewMonth, d));
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
 }
 
 type Props = {

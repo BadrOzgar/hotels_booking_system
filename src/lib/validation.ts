@@ -19,9 +19,9 @@ function optionalString() {
 export const hotelSchema = z.object({
   name: z.string().trim().min(2, "Name is required"),
   description: z.string().trim().min(10, "Description is required"),
-  city: z.string().trim().min(1, "City is required"),
-  country: z.string().trim().min(1, "Country is required"),
-  address: z.string().trim().min(1, "Address is required"),
+  // Optional here — editing an existing hotel shouldn't force re-pasting a Maps link every
+  // time; leaving it blank keeps the hotel's current location unchanged.
+  mapsLink: optionalString(),
   starRating: z.coerce.number().int().min(0).max(5),
   currency: z.string().trim().min(1).default("MAD"),
   checkInTime: z.string().trim().min(1),
@@ -42,9 +42,7 @@ export const signupSchema = z.object({
   email: z.string().trim().email("Invalid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   hotelName: z.string().trim().min(2, "Hotel name is required"),
-  city: z.string().trim().min(1, "City is required"),
-  country: z.string().trim().min(1, "Country is required"),
-  address: z.string().trim().min(1, "Address is required"),
+  mapsLink: z.string().trim().min(1, "A Google Maps link is required"),
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 

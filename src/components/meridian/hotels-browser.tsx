@@ -122,10 +122,22 @@ function HotelCardMedia({
   }
 
   return (
-    <div
-      className="group relative h-[190px] bg-cover bg-center"
-      style={hasPhotos ? { backgroundImage: `url(${images[index].url})` } : { background: gradient }}
-    >
+    <div className="group relative h-[190px] overflow-hidden" style={!hasPhotos ? { background: gradient } : undefined}>
+      {hasPhotos && (
+        <div
+          className="flex h-full transition-transform duration-500 ease-[cubic-bezier(.4,0,.2,1)]"
+          style={{ transform: `translateX(-${index * 100}%)` }}
+        >
+          {images.map((img) => (
+            <div
+              key={img.url}
+              className="h-full w-full shrink-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${img.url})` }}
+            />
+          ))}
+        </div>
+      )}
+
       {tag && (
         <div
           className="absolute top-3.5 left-3.5 rounded-full bg-white/94 px-3 py-1.5 text-xs font-bold text-[#1F2937]"
@@ -157,10 +169,16 @@ function HotelCardMedia({
           </button>
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
             {images.map((img, i) => (
-              <span
+              <button
+                type="button"
                 key={img.url}
-                className="size-[6px] rounded-full"
-                style={{ background: i === index ? "#fff" : "rgba(255,255,255,.5)" }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIndex(i);
+                }}
+                aria-label={`Go to photo ${i + 1}`}
+                className="h-[6px] cursor-pointer rounded-full transition-all duration-300"
+                style={{ width: i === index ? 16 : 6, background: i === index ? "#fff" : "rgba(255,255,255,.5)" }}
               />
             ))}
           </div>

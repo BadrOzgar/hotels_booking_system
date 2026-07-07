@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, Phone, CreditCard, Building2 } from "lucide-react";
 import { paymentStatusTokens, formatStatusLabel } from "@/lib/meridian-data";
 import { getAdminBooking } from "@/lib/data/bookings";
 import { formatCurrency } from "@/lib/pricing";
+import { coverStyle } from "@/lib/media";
 import { requireHotelOwnerSession } from "@/lib/session";
 import { BookingHeader, MarkPaidButton } from "@/components/admin/booking-actions";
 import { EditBookingButton } from "@/components/admin/edit-booking-button";
@@ -31,7 +32,7 @@ export default async function AdminBookingDetailPage({
   const initials = `${booking.contactFirstName[0] ?? ""}${booking.contactLastName[0] ?? ""}`.toUpperCase();
 
   return (
-    <div className="fu max-w-[1000px] p-8">
+    <div className="fu mx-auto max-w-[1000px] p-8">
       <Link
         href="/admin/bookings"
         className="navlink inline-flex items-center gap-[7px] text-sm font-semibold text-[#6B7280]"
@@ -40,30 +41,27 @@ export default async function AdminBookingDetailPage({
         Back to bookings
       </Link>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <BookingHeader
-          bookingId={booking.id}
-          confirmationCode={booking.confirmationCode}
-          status={booking.status}
+      <BookingHeader
+        bookingId={booking.id}
+        confirmationCode={booking.confirmationCode}
+        status={booking.status}
+      >
+        <EditBookingButton
+          booking={{
+            id: booking.id,
+            confirmationCode: booking.confirmationCode,
+            checkIn: toDateInputValue(booking.checkIn),
+            checkOut: toDateInputValue(booking.checkOut),
+            adults: booking.adults,
+            children: booking.children,
+            specialRequests: booking.specialRequests ?? "",
+            contactFirstName: booking.contactFirstName,
+            contactLastName: booking.contactLastName,
+            contactEmail: booking.contactEmail,
+            contactPhone: booking.contactPhone ?? "",
+          }}
         />
-        <div className="mt-[18px] sm:mt-0">
-          <EditBookingButton
-            booking={{
-              id: booking.id,
-              confirmationCode: booking.confirmationCode,
-              checkIn: toDateInputValue(booking.checkIn),
-              checkOut: toDateInputValue(booking.checkOut),
-              adults: booking.adults,
-              children: booking.children,
-              specialRequests: booking.specialRequests ?? "",
-              contactFirstName: booking.contactFirstName,
-              contactLastName: booking.contactLastName,
-              contactEmail: booking.contactEmail,
-              contactPhone: booking.contactPhone ?? "",
-            }}
-          />
-        </div>
-      </div>
+      </BookingHeader>
 
       <div className="mt-[26px] grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_340px]">
         <div className="flex flex-col gap-5">
@@ -111,8 +109,8 @@ export default async function AdminBookingDetailPage({
             <h2 className="mb-[18px] text-base font-bold">Room &amp; dates</h2>
             <div className="flex gap-4">
               <div
-                className="h-[84px] w-[110px] shrink-0 rounded-2xl"
-                style={{ background: booking.roomType.gradient }}
+                className="h-[84px] w-[110px] shrink-0 rounded-2xl bg-cover bg-center"
+                style={coverStyle(booking.roomType.images[0]?.url ?? null, booking.roomType.gradient)}
               />
               <div className="flex-1">
                 <div className="text-[17px] font-bold">{booking.roomType.name}</div>

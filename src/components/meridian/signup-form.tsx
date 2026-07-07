@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { ImagePlus, X, Loader2 } from "lucide-react";
-import { signupAction } from "@/app/signup/actions";
+import { ImagePlus, X, Loader2, MapPin } from "lucide-react";
+import { signupAction, previewSignupMapsLinkAction, type ResolvedMapsLink } from "@/app/signup/actions";
 import { usePreviewUrls } from "@/hooks/use-preview-urls";
 import { compressImageFile } from "@/lib/compress-image";
+import { LocationMap } from "@/components/meridian/location-map";
 
 const MAX_IMAGES = 3;
 
@@ -14,6 +15,28 @@ export function SignupForm() {
   const [compressing, setCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previews = usePreviewUrls(files);
+
+  const [mapsLink, setMapsLink] = useState("");
+  const [preview, setPreview] = useState<ResolvedMapsLink | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
+
+  async function handleLocate() {
+    if (!mapsLink.trim()) return;
+    setLocating(true);
+    setLocateError(null);
+    try {
+      const resolved = await previewSignupMapsLinkAction(mapsLink);
+      if (!resolved) {
+        setPreview(null);
+        setLocateError("Couldn't read a location from that link — check it's a valid Google Maps link.");
+      } else {
+        setPreview(resolved);
+      }
+    } finally {
+      setLocating(false);
+    }
+  }
 
   function syncFileInput(next: File[]) {
     const dt = new DataTransfer();
@@ -61,11 +84,43 @@ export function SignupForm() {
       </h2>
       <div className="mt-3 flex flex-col gap-[14px]">
         <Field label="Hotel name" name="hotelName" placeholder="Cliffside Inn" />
-        <div className="grid grid-cols-2 gap-[14px]">
-          <Field label="City" name="city" placeholder="Big Sur" />
-          <Field label="Country" name="country" placeholder="United States" />
+        <div>
+          <label className="text-[13px] font-semibold text-[#374151]">Google Maps link</label>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              name="mapsLink"
+              value={mapsLink}
+              onChange={(e) => setMapsLink(e.target.value)}
+              placeholder="Paste a Google Maps link"
+              required
+              className="flex-1 rounded-[13px] border border-[#E7E8EC] bg-[#FCFCFD] px-4 py-3.5 text-[15px] outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleLocate}
+              disabled={locating || !mapsLink.trim()}
+              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[13px] border border-[#E7E8EC] bg-white px-4 py-3.5 text-[13.5px] font-semibold text-[#374151] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {locating ? <Loader2 className="size-4 animate-spin" /> : <MapPin className="size-4" />}
+              {locating ? "Locating…" : "Locate"}
+            </button>
+          </div>
+          <p className="mt-1.5 text-[12px] font-medium text-[#9CA3AF]">
+            Open your hotel&apos;s exact location in Google Maps, share it, and paste the link
+            here — we use it to pin your hotel precisely on the map.
+          </p>
+          {locateError && <p className="mt-1.5 text-[12.5px] font-medium text-[#D96A6A]">{locateError}</p>}
+          {preview && (
+            <>
+              <p className="mt-2.5 text-[13px] font-semibold text-[#374151]">
+                Detected: {preview.address}, {preview.city}, {preview.country}
+              </p>
+              <div className="mt-2 h-[180px] overflow-hidden rounded-xl border border-[#E7E8EC]">
+                <LocationMap lat={preview.lat} lng={preview.lng} label="Map preview" zoom={14} />
+              </div>
+            </>
+          )}
         </div>
-        <Field label="Address" name="address" placeholder="1 Cliff Road" />
 
         <div>
           <label className="text-[13px] font-semibold text-[#374151]">
@@ -139,11 +194,15 @@ function Field({
   name,
   type = "text",
   placeholder,
+  value,
+  onChange,
 }: {
   label: string;
   name: string;
   type?: string;
   placeholder?: string;
+  value?: string;
+  onChange?: (next: string) => void;
 }) {
   return (
     <div>
@@ -152,6 +211,8 @@ function Field({
         name={name}
         type={type}
         placeholder={placeholder}
+        value={onChange ? value : undefined}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         required
         minLength={type === "password" ? 8 : undefined}
         className="mt-2 w-full rounded-[13px] border border-[#E7E8EC] bg-[#FCFCFD] px-4 py-3.5 text-[15px] outline-none"

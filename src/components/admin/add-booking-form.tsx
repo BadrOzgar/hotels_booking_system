@@ -78,12 +78,12 @@ export function AddBookingForm({
 
       <h2 className="mt-6 text-[13px] font-bold tracking-[.04em] text-[#9CA3AF] uppercase">Guest</h2>
       <div className="mt-3 grid grid-cols-2 gap-[14px]">
-        <Field label="First name" name="firstName" defaultValue={initialGuest?.firstName} />
-        <Field label="Last name" name="lastName" defaultValue={initialGuest?.lastName} />
+        <Field label="First name" name="firstName" placeholder={initialGuest?.firstName} />
+        <Field label="Last name" name="lastName" placeholder={initialGuest?.lastName} />
       </div>
       <div className="mt-[14px] grid grid-cols-2 gap-[14px]">
-        <Field label="Email" name="email" type="email" defaultValue={initialGuest?.email} />
-        <Field label="Phone" name="phone" required={false} defaultValue={initialGuest?.phone ?? ""} />
+        <Field label="Email" name="email" type="email" placeholder={initialGuest?.email} />
+        <Field label="Phone" name="phone" required={false} placeholder={initialGuest?.phone ?? ""} />
       </div>
       <div className="mt-[14px]">
         <label className="text-[13px] font-semibold text-[#374151]">
@@ -126,6 +126,7 @@ function Field({
   name,
   type = "text",
   defaultValue,
+  placeholder,
   required = true,
   min,
 }: {
@@ -133,6 +134,7 @@ function Field({
   name: string;
   type?: string;
   defaultValue?: string;
+  placeholder?: string;
   required?: boolean;
   min?: number;
 }) {
@@ -143,6 +145,7 @@ function Field({
         name={name}
         type={type}
         defaultValue={defaultValue}
+        placeholder={placeholder}
         required={required}
         min={min}
         className="mt-2 w-full rounded-xl border border-[#E7E8EC] bg-[#FCFCFD] px-3.5 py-3 text-[15px] outline-none"
