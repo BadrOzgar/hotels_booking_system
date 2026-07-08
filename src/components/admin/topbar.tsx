@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, Bell, Plus, ChevronDown, LogOut, Globe } from "lucide-react";
+import { Search, Bell, Plus, ChevronDown, LogOut, Globe, Menu } from "lucide-react";
 import { logout, getNewBookingNotificationsAction, type LiveNotification } from "@/app/admin/actions";
+import { useMobileSidebar } from "@/components/admin/mobile-sidebar-context";
 
 const POLL_INTERVAL_MS = 15_000;
 
@@ -39,6 +40,7 @@ export function AdminTopbar({
   quickAddHref?: string | null;
   notifications?: LiveNotification[];
 }) {
+  const { setOpen: setMobileSidebarOpen } = useMobileSidebar();
   const [openNotifications, setOpenNotifications] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
   const [notifications, setNotifications] = useState<LiveNotification[]>(initialNotifications);
@@ -93,17 +95,26 @@ export function AdminTopbar({
   return (
     <div
       ref={rootRef}
-      className="sticky top-0 z-40 flex items-center justify-between border-b border-[#ECEDF1] px-8 py-4"
+      className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-[#ECEDF1] px-4 py-4 sm:px-6 lg:px-8"
       style={{ background: "rgba(250,250,248,.85)", backdropFilter: "blur(12px)" }}
     >
-      <div className="relative hidden w-[340px] sm:block">
+      <button
+        type="button"
+        onClick={() => setMobileSidebarOpen(true)}
+        aria-label="Open menu"
+        className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[#E7E8EC] bg-white lg:hidden"
+      >
+        <Menu className="size-[18px] text-[#1F2937]" />
+      </button>
+
+      <div className="relative hidden min-w-0 flex-1 md:block lg:max-w-[340px]">
         <Search className="absolute top-1/2 left-3.5 size-[17px] -translate-y-1/2 text-[#9CA3AF]" />
         <input
           placeholder="Search bookings, guests, rooms…"
           className="w-full rounded-xl border border-[#E7E8EC] bg-white py-2.5 pr-3.5 pl-10 text-sm outline-none"
         />
       </div>
-      <div className="ml-auto flex items-center gap-3.5">
+      <div className="ml-auto flex items-center gap-2 sm:gap-3.5">
         <div className="relative">
           <button
             type="button"
@@ -123,7 +134,7 @@ export function AdminTopbar({
           </button>
           {openNotifications && (
             <div
-              className="absolute top-[calc(100%+8px)] right-0 w-[320px] rounded-2xl border border-[#E7E8EC] bg-white p-2"
+              className="absolute top-[calc(100%+8px)] right-0 w-[min(320px,calc(100vw-2rem))] rounded-2xl border border-[#E7E8EC] bg-white p-2"
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.12)" }}
             >
               <div className="px-3 py-2 text-[13px] font-bold text-[#1F2937]">Notifications</div>
@@ -176,7 +187,7 @@ export function AdminTopbar({
           </button>
           {openProfile && (
             <div
-              className="absolute top-[calc(100%+8px)] right-0 w-[220px] overflow-hidden rounded-2xl border border-[#E7E8EC] bg-white p-1.5"
+              className="absolute top-[calc(100%+8px)] right-0 w-[min(220px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#E7E8EC] bg-white p-1.5"
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.12)" }}
             >
               <div className="px-3 py-2.5">

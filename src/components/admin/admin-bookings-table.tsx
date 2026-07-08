@@ -117,7 +117,7 @@ export function AdminBookingsTable({ rows, roomOptions }: { rows: AdminBookingRo
           </button>
           {showFilterPanel && (
             <div
-              className="absolute top-[calc(100%+8px)] right-0 z-10 w-[220px] rounded-2xl border border-[#E7E8EC] bg-white p-4"
+              className="absolute top-[calc(100%+8px)] right-0 z-10 w-[min(220px,calc(100vw-2rem))] rounded-2xl border border-[#E7E8EC] bg-white p-4"
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.12)" }}
             >
               <div className="text-[13px] font-bold text-[#374151]">Payment status</div>

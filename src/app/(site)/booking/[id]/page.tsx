@@ -49,7 +49,7 @@ export default async function BookingPage({
   });
 
   return (
-    <div className="fu mx-auto max-w-[1080px] px-8 pt-8 pb-20">
+    <div className="fu mx-auto max-w-[1080px] px-4 pt-8 pb-16 sm:px-6 lg:px-8 lg:pb-20">
       <Link
         href={`/rooms/${room.id}`}
         className="navlink inline-flex items-center gap-[7px] text-sm font-semibold text-[#6B7280]"
@@ -57,29 +57,31 @@ export default async function BookingPage({
         <ArrowLeft className="size-[17px]" />
         Back to room
       </Link>
-      <h1 className="mt-5 text-[34px] font-extrabold tracking-[-.03em]">Confirm your stay</h1>
+      <h1 className="mt-5 text-[26px] font-extrabold tracking-[-.03em] sm:text-[30px] md:text-[34px]">
+        Confirm your stay
+      </h1>
 
       {/* STEPS */}
-      <div className="mt-5 flex items-center gap-3">
+      <div className="mt-5 flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="flex items-center gap-[9px]">
-          <span className="flex size-[26px] items-center justify-center rounded-full bg-[#7C8CF8] text-[13px] font-bold text-white">
+          <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-[#7C8CF8] text-[13px] font-bold text-white">
             1
           </span>
-          <span className="text-sm font-semibold">Your details</span>
+          <span className="text-[13px] font-semibold sm:text-sm">Your details</span>
         </div>
-        <div className="h-0.5 w-10 bg-[#E7E8EC]" />
+        <div className="h-0.5 w-6 shrink-0 bg-[#E7E8EC] sm:w-10" />
         <div className="flex items-center gap-[9px]">
-          <span className="flex size-[26px] items-center justify-center rounded-full bg-[#F4F5F7] text-[13px] font-bold text-[#9CA3AF]">
+          <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-[#F4F5F7] text-[13px] font-bold text-[#9CA3AF]">
             2
           </span>
-          <span className="text-sm font-semibold text-[#9CA3AF]">Payment</span>
+          <span className="text-[13px] font-semibold text-[#9CA3AF] sm:text-sm">Payment</span>
         </div>
-        <div className="h-0.5 w-10 bg-[#E7E8EC]" />
+        <div className="h-0.5 w-6 shrink-0 bg-[#E7E8EC] sm:w-10" />
         <div className="flex items-center gap-[9px]">
-          <span className="flex size-[26px] items-center justify-center rounded-full bg-[#F4F5F7] text-[13px] font-bold text-[#9CA3AF]">
+          <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-[#F4F5F7] text-[13px] font-bold text-[#9CA3AF]">
             3
           </span>
-          <span className="text-sm font-semibold text-[#9CA3AF]">Confirmed</span>
+          <span className="text-[13px] font-semibold text-[#9CA3AF] sm:text-sm">Confirmed</span>
         </div>
       </div>
 

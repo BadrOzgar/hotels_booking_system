@@ -28,16 +28,16 @@ export function RoomCard({ room }: { room: PublicRoomListing }) {
           {room.rating}
         </div>
       </div>
-      <div className="px-[22px] pt-[22px] pb-6">
-        <div className="flex items-center justify-between">
+      <div className="px-4 pt-[22px] pb-6 sm:px-[22px]">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <h3 className="m-0 text-xl font-bold tracking-[-.02em]">{room.name}</h3>
           <span className="text-[13px] font-semibold text-[#9CA3AF]">{room.type}</span>
         </div>
         <div className="mt-1.5 flex items-center gap-1.5 text-[13px] font-medium text-[#9CA3AF]">
-          <MapPin className="size-[13px]" />
-          {room.hotel.name} &middot; {room.hotel.city}
+          <MapPin className="size-[13px] shrink-0" />
+          <span className="truncate">{room.hotel.name} &middot; {room.hotel.city}</span>
         </div>
-        <div className="mt-3.5 flex gap-4 text-[13.5px] font-medium text-[#6B7280]">
+        <div className="mt-3.5 flex flex-wrap gap-x-4 gap-y-1.5 text-[13.5px] font-medium text-[#6B7280]">
           <span className="flex items-center gap-1.5">
             <Users className="size-[15px] text-[#9CA3AF]" />
             {room.cap} guests

@@ -48,7 +48,7 @@ export default async function RoomDetailPage({
   const roomsCount = Math.max(1, Number(search.rooms) || 1);
 
   return (
-    <div className="fu mx-auto max-w-[1240px] px-8 pt-8 pb-20">
+    <div className="fu mx-auto max-w-[1240px] px-4 pt-8 pb-24 sm:px-6 lg:px-8 lg:pb-20">
       <div className="flex items-center gap-2 text-[13.5px] font-medium text-[#9CA3AF]">
         <Link href="/" className="navlink">Home</Link>
         <ChevronRight className="size-[15px]" />
@@ -66,7 +66,7 @@ export default async function RoomDetailPage({
           <span className="rounded-lg bg-[#F3F5FF] px-[11px] py-[5px] text-[12.5px] font-bold text-[#7C8CF8]">
             {room.category}
           </span>
-          <h1 className="mt-3.5 text-4xl font-extrabold tracking-[-.03em]">{room.name}</h1>
+          <h1 className="mt-3.5 text-[26px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">{room.name}</h1>
           <div className="mt-3 flex items-center gap-2 text-sm font-semibold">
             <Star className="size-4 fill-[#F6D68A] text-[#F6D68A]" />
             {room.rating || "New"}{" "}

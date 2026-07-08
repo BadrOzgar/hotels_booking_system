@@ -32,7 +32,7 @@ export default async function AdminBookingDetailPage({
   const initials = `${booking.contactFirstName[0] ?? ""}${booking.contactLastName[0] ?? ""}`.toUpperCase();
 
   return (
-    <div className="fu mx-auto max-w-[1000px] p-8">
+    <div className="fu mx-auto max-w-[1000px] p-4 sm:p-6 lg:p-8">
       <Link
         href="/admin/bookings"
         className="navlink inline-flex items-center gap-[7px] text-sm font-semibold text-[#6B7280]"

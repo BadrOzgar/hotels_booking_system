@@ -134,8 +134,9 @@ export function RoomBookingPanel({
   })();
 
   return (
+    <>
     <div
-      className="sticky top-[92px] rounded-[22px] border border-[#E7E8EC] bg-white p-[26px]"
+      className="rounded-[22px] border border-[#E7E8EC] bg-white p-[26px] lg:sticky lg:top-[92px]"
       style={{ boxShadow: "0 12px 30px rgba(16,24,40,.08)" }}
     >
       <div className="flex items-baseline gap-1.5">
@@ -164,7 +165,7 @@ export function RoomBookingPanel({
 
         {datesOpen && (
           <div
-            className="absolute top-[calc(100%+10px)] left-0 z-20 w-full min-w-[320px] rounded-[20px] border border-[#E7E8EC] bg-white p-5"
+            className="absolute top-[calc(100%+10px)] left-1/2 z-20 w-[min(360px,calc(100vw-2.5rem))] -translate-x-1/2 rounded-[20px] border border-[#E7E8EC] bg-white p-5"
             style={{ boxShadow: "0 16px 40px rgba(16,24,40,.14)" }}
           >
             <div className="flex items-center justify-between">
@@ -274,7 +275,7 @@ export function RoomBookingPanel({
 
         {whoOpen && (
           <div
-            className="absolute top-[calc(100%+10px)] left-0 z-20 w-full min-w-[280px] rounded-2xl border border-[#E7E8EC] bg-white p-5"
+            className="absolute top-[calc(100%+10px)] left-1/2 z-20 w-[min(320px,calc(100vw-2.5rem))] -translate-x-1/2 rounded-2xl border border-[#E7E8EC] bg-white p-5"
             style={{ boxShadow: "0 12px 30px rgba(16,24,40,.14)" }}
           >
             <GuestStepper label="Adults" hint="Ages 13 or above" value={adults} min={1} max={10} onChange={setAdults} />
@@ -335,5 +336,39 @@ export function RoomBookingPanel({
         You won&apos;t be charged yet
       </div>
     </div>
+
+    {/* MOBILE STICKY BOOKING BAR */}
+    <div
+      className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-[#E7E8EC] bg-white/95 px-4 py-3 backdrop-blur lg:hidden"
+      style={{ boxShadow: "0 -4px 20px rgba(16,24,40,.08)" }}
+    >
+      <div>
+        <div className="text-[17px] font-extrabold tracking-[-.02em]">
+          {hasValidRange ? formatCurrency(pricing.total) : formatCurrency(pricePerNight)}
+        </div>
+        <div className="text-[11.5px] font-medium text-[#9CA3AF]">
+          {hasValidRange ? `${nights} night${nights === 1 ? "" : "s"} total` : "per night"}
+        </div>
+      </div>
+      {hasValidRange ? (
+        <Link
+          href={bookHref}
+          className="btnp rounded-[13px] px-6 py-3.5 text-[15px] font-bold text-white"
+          style={{ background: "#7C8CF8", boxShadow: "0 4px 14px rgba(124,140,248,.28)" }}
+        >
+          Book now
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setDatesOpen(true)}
+          className="rounded-[13px] px-6 py-3.5 text-[15px] font-bold text-white"
+          style={{ background: "#7C8CF8", boxShadow: "0 4px 14px rgba(124,140,248,.28)" }}
+        >
+          Select dates
+        </button>
+      )}
+    </div>
+    </>
   );
 }

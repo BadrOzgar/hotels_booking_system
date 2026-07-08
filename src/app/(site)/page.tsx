@@ -52,18 +52,18 @@ export default async function LandingPage() {
     : 0;
 
   return (
-    <div className="fu mx-auto max-w-[1240px] px-8 pb-24">
+    <div className="fu mx-auto max-w-[1240px] px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
       <Hero />
       <SearchCard destinations={destinations} />
 
       {/* FEATURED ROOMS */}
-      <div className="pt-[88px]">
+      <div className="pt-14 sm:pt-16 md:pt-[88px]">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
               Featured stays
             </div>
-            <h2 className="mt-3 text-4xl font-extrabold tracking-[-.03em]">
+            <h2 className="mt-3 text-[28px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">
               Rooms designed to slow you down
             </h2>
           </div>
@@ -82,12 +82,12 @@ export default async function LandingPage() {
       </div>
 
       {/* AMENITIES */}
-      <div className="pt-24">
+      <div className="pt-16 sm:pt-20 md:pt-24">
         <div className="text-center">
           <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
             The resort
           </div>
-          <h2 className="mt-3 text-4xl font-extrabold tracking-[-.03em]">
+          <h2 className="mt-3 text-[28px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">
             Everything, within a barefoot walk
           </h2>
         </div>
@@ -116,13 +116,13 @@ export default async function LandingPage() {
 
       {/* TESTIMONIALS */}
       {testimonials.length > 0 && (
-        <div className="pt-24">
+        <div className="pt-16 sm:pt-20 md:pt-24">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
             <div>
               <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
                 Guest stories
               </div>
-              <h2 className="mt-3 text-4xl font-extrabold tracking-[-.03em]">
+              <h2 className="mt-3 text-[28px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">
                 Loved by real travellers
               </h2>
             </div>
@@ -175,12 +175,12 @@ export default async function LandingPage() {
 
       {/* FAQ */}
       {faqs.length > 0 && (
-        <div className="grid grid-cols-1 gap-14 pt-24 md:grid-cols-[.8fr_1.2fr]">
+        <div className="grid grid-cols-1 gap-10 pt-16 sm:pt-20 md:grid-cols-[.8fr_1.2fr] md:gap-14 md:pt-24">
           <div>
             <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
               Good to know
             </div>
-            <h2 className="mt-3 text-[38px] font-extrabold tracking-[-.03em]">
+            <h2 className="mt-3 text-[28px] font-extrabold tracking-[-.03em] sm:text-[32px] md:text-[38px]">
               Questions,
               <br />
               answered
@@ -213,7 +213,7 @@ export default async function LandingPage() {
 
       {/* CTA */}
       <div
-        className="relative mt-24 overflow-hidden rounded-[28px] px-8 py-16 text-center"
+        className="relative mt-16 overflow-hidden rounded-2xl px-5 py-10 text-center sm:mt-20 sm:rounded-[28px] sm:px-8 sm:py-16 md:mt-24"
         style={{
           background: "linear-gradient(135deg,#7C8CF8,#8FD3FE)",
           boxShadow: "0 20px 50px rgba(124,140,248,.24)",
@@ -226,15 +226,15 @@ export default async function LandingPage() {
           }}
         />
         <div className="relative">
-          <h2 className="m-0 text-[44px] font-extrabold tracking-[-.03em] text-white">
+          <h2 className="m-0 text-[28px] font-extrabold tracking-[-.03em] text-white sm:text-[34px] md:text-[44px]">
             Your table by the sea is ready
           </h2>
-          <p className="mt-4 text-lg text-white/90">
+          <p className="mt-4 text-[15px] text-white/90 sm:text-lg">
             Book direct for the best rate and a complimentary breakfast.
           </p>
           <Link
             href="/rooms"
-            className="btns mt-[30px] inline-block rounded-[15px] bg-white px-8 py-4 text-base font-bold text-[#1F2937]"
+            className="btns mt-[30px] inline-block w-full rounded-[15px] bg-white px-8 py-4 text-base font-bold text-[#1F2937] sm:w-auto"
             style={{ boxShadow: "0 8px 24px rgba(16,24,40,.16)" }}
           >
             Check availability

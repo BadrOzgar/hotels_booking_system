@@ -64,11 +64,11 @@ export default async function RoomsPage({
     const searchParamsString = `?${forwardParams.toString()}`;
 
     return (
-      <div className="fu mx-auto max-w-[1240px] px-8 pt-10 pb-20">
+      <div className="fu mx-auto max-w-[1240px] px-4 pt-8 pb-16 sm:px-6 sm:pt-10 lg:px-8 lg:pb-20">
         <Breadcrumb />
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="m-0 text-4xl font-extrabold tracking-[-.03em]">
+            <h1 className="m-0 text-[26px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">
               {destination ? `Rooms in ${destination}` : "Available rooms"}
             </h1>
             <p className="mt-2.5 text-[15.5px] font-medium text-[#6B7280]">
@@ -100,11 +100,11 @@ export default async function RoomsPage({
   const pageLinkBase = pageLinkParams.toString() ? `?${pageLinkParams.toString()}&` : "?";
 
   return (
-    <div className="fu mx-auto max-w-[1240px] px-8 pt-10 pb-20">
+    <div className="fu mx-auto max-w-[1240px] px-4 pt-8 pb-16 sm:px-6 sm:pt-10 lg:px-8 lg:pb-20">
       <Breadcrumb />
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="m-0 text-4xl font-extrabold tracking-[-.03em]">
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">
             {destination ? `Rooms in ${destination}` : "Available rooms"}
           </h1>
           <p className="mt-2.5 text-[15.5px] font-medium text-[#6B7280]">
@@ -123,7 +123,7 @@ export default async function RoomsPage({
           <Link
             href={`${pageLinkBase}page=${Math.max(1, page - 1)}`}
             aria-disabled={page === 1}
-            className="flex size-9 items-center justify-center rounded-lg border border-[#E7E8EC] bg-white disabled:opacity-40"
+            className="flex size-11 items-center justify-center rounded-lg border border-[#E7E8EC] bg-white disabled:opacity-40"
             style={page === 1 ? { pointerEvents: "none", opacity: 0.4 } : undefined}
           >
             <ChevronLeft className="size-[15px] text-[#6B7280]" />
@@ -135,7 +135,7 @@ export default async function RoomsPage({
                 {i > 0 && arr[i - 1] !== p - 1 && <span className="px-1 text-[#9CA3AF]">…</span>}
                 <Link
                   href={`${pageLinkBase}page=${p}`}
-                  className="flex size-9 items-center justify-center rounded-lg text-[13px] font-bold"
+                  className="flex size-11 items-center justify-center rounded-lg text-[13px] font-bold"
                   style={
                     p === page
                       ? { background: "#7C8CF8", color: "#fff" }
@@ -148,7 +148,7 @@ export default async function RoomsPage({
             ))}
           <Link
             href={`${pageLinkBase}page=${Math.min(totalPages, page + 1)}`}
-            className="flex size-9 items-center justify-center rounded-lg border border-[#E7E8EC] bg-white"
+            className="flex size-11 items-center justify-center rounded-lg border border-[#E7E8EC] bg-white"
             style={page === totalPages ? { pointerEvents: "none", opacity: 0.4 } : undefined}
           >
             <ChevronRightIcon className="size-[15px] text-[#6B7280]" />

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Check, Star } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Star, SlidersHorizontal, X } from "lucide-react";
 import type { PublicRoomListing } from "@/lib/data/room-types";
 import { formatCurrency } from "@/lib/pricing";
 import { RoomRow } from "./room-row";
@@ -33,9 +33,28 @@ const defaultFilters: Filters = {
   minRating: null,
 };
 
+function countActiveFilters(filters: Filters): number {
+  let count = 0;
+  if (filters.priceMin !== PRICE_MIN || filters.priceMax !== PRICE_MAX) count++;
+  if (filters.capacity !== null) count++;
+  if (filters.bedTypes.length > 0) count++;
+  if (filters.minRating !== null) count++;
+  return count;
+}
+
 export function RoomsBrowser({ rooms, searchParams = "" }: { rooms: PublicRoomListing[]; searchParams?: string }) {
   const [sort, setSort] = useState<Sort>("featured");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const activeFilterCount = countActiveFilters(filters);
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileFiltersOpen]);
 
   const filtered = useMemo(() => {
     return rooms.filter((room) => {
@@ -69,38 +88,62 @@ export function RoomsBrowser({ rooms, searchParams = "" }: { rooms: PublicRoomLi
 
   return (
     <div>
-      <div className="flex items-center gap-2.5">
-        <span className="text-[13.5px] font-medium text-[#9CA3AF]">Sort</span>
-        <div className="flex gap-1 rounded-xl border border-[#E7E8EC] bg-[#F4F5F7] p-1">
-          <button
-            type="button"
-            onClick={() => setSort("featured")}
-            style={sort === "featured" ? on : off}
-            className="rounded-lg px-[13px] py-[7px] text-[13px] font-semibold"
-          >
-            Featured
-          </button>
-          <button
-            type="button"
-            onClick={() => setSort("low")}
-            style={sort === "low" ? on : off}
-            className="rounded-lg px-[13px] py-[7px] text-[13px] font-semibold"
-          >
-            Price &uarr;
-          </button>
-          <button
-            type="button"
-            onClick={() => setSort("high")}
-            style={sort === "high" ? on : off}
-            className="rounded-lg px-[13px] py-[7px] text-[13px] font-semibold"
-          >
-            Price &darr;
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <span className="hidden text-[13.5px] font-medium text-[#9CA3AF] sm:inline">Sort</span>
+          <div className="flex gap-1 rounded-xl border border-[#E7E8EC] bg-[#F4F5F7] p-1">
+            <button
+              type="button"
+              onClick={() => setSort("featured")}
+              style={sort === "featured" ? on : off}
+              className="rounded-lg px-2.5 py-[7px] text-[13px] font-semibold whitespace-nowrap sm:px-[13px]"
+            >
+              Featured
+            </button>
+            <button
+              type="button"
+              onClick={() => setSort("low")}
+              style={sort === "low" ? on : off}
+              className="rounded-lg px-2.5 py-[7px] text-[13px] font-semibold whitespace-nowrap sm:px-[13px]"
+            >
+              Price &uarr;
+            </button>
+            <button
+              type="button"
+              onClick={() => setSort("high")}
+              style={sort === "high" ? on : off}
+              className="rounded-lg px-2.5 py-[7px] text-[13px] font-semibold whitespace-nowrap sm:px-[13px]"
+            >
+              Price &darr;
+            </button>
+          </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setMobileFiltersOpen(true)}
+          className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#E7E8EC] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-[#1F2937] lg:hidden"
+        >
+          <SlidersHorizontal className="size-4 text-[#7C8CF8]" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="flex size-5 items-center justify-center rounded-full bg-[#7C8CF8] text-[11px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-[280px_1fr]">
-        <FiltersSidebar filters={filters} onChange={setFilters} />
+        <div className="hidden lg:block">
+          <div
+            className="sticky top-[92px] rounded-[20px] border border-[#E7E8EC] bg-white p-6"
+            style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
+          >
+            <FiltersPanel filters={filters} onChange={setFilters} />
+          </div>
+        </div>
+
         <div className="flex flex-col gap-5">
           {sorted.length > 0 ? (
             sorted.map((room) => <RoomRow key={room.id} room={room} searchParams={searchParams} />)
@@ -117,11 +160,45 @@ export function RoomsBrowser({ rooms, searchParams = "" }: { rooms: PublicRoomLi
           )}
         </div>
       </div>
+
+      {/* MOBILE FILTERS BOTTOM SHEET */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[24px] bg-white p-6 pb-8">
+            <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-[#E7E8EC]" />
+            <div className="flex items-center justify-between">
+              <span className="text-base font-bold">Filters</span>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                aria-label="Close filters"
+                className="flex size-9 cursor-pointer items-center justify-center rounded-full bg-[#F4F5F7]"
+              >
+                <X className="size-4 text-[#6B7280]" />
+              </button>
+            </div>
+            <FiltersPanel filters={filters} onChange={setFilters} />
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(false)}
+              className="btnp mt-6 w-full rounded-[13px] py-3.5 text-[15px] font-semibold text-white"
+              style={{ background: "#7C8CF8", boxShadow: "0 6px 18px rgba(124,140,248,.3)" }}
+            >
+              Show {sorted.length} room{sorted.length === 1 ? "" : "s"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function FiltersSidebar({
+function FiltersPanel({
   filters,
   onChange,
 }: {
@@ -162,12 +239,9 @@ function FiltersSidebar({
   const maxPct = ((filters.priceMax - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
 
   return (
-    <div
-      className="sticky top-[92px] rounded-[20px] border border-[#E7E8EC] bg-white p-6"
-      style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
-    >
+    <div>
       <div className="flex items-center justify-between">
-        <span className="text-base font-bold">Filters</span>
+        <span className="hidden text-base font-bold lg:inline">Filters</span>
         {hasActiveFilters && (
           <button
             type="button"

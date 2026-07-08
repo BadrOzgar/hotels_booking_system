@@ -55,12 +55,12 @@ export function SearchCard({ destinations = [] }: { destinations?: string[] }) {
     .join(", ");
 
   return (
-    <div className="relative z-10 -mt-[52px] px-2">
+    <div className="relative z-10 -mt-8 px-3 sm:-mt-10 sm:px-2 md:-mt-[52px]">
       <div
-        className="grid grid-cols-2 gap-1.5 rounded-[22px] border border-[#E7E8EC] bg-white p-3 md:grid-cols-6"
+        className="grid grid-cols-1 gap-1.5 rounded-[22px] border border-[#E7E8EC] bg-white p-3 sm:grid-cols-2 md:grid-cols-6"
         style={{ boxShadow: "0 16px 40px rgba(16,24,40,.1)" }}
       >
-        <div className="col-span-2 rounded-[15px] px-[18px] py-3.5 md:col-span-1">
+        <div className="rounded-[15px] px-[18px] py-3.5 sm:col-span-2 md:col-span-1">
           <label className="text-xs font-semibold tracking-[.04em] text-[#9CA3AF] uppercase">
             Destination
           </label>
@@ -83,6 +83,7 @@ export function SearchCard({ destinations = [] }: { destinations?: string[] }) {
         </div>
 
         <DateRangePicker
+          className="sm:col-span-2 md:col-span-2"
           checkIn={checkIn}
           checkOut={checkOut}
           onChange={(nextCheckIn, nextCheckOut) => {
@@ -91,7 +92,10 @@ export function SearchCard({ destinations = [] }: { destinations?: string[] }) {
           }}
         />
 
-        <div ref={whoRef} className="relative rounded-[15px] px-[18px] py-3.5" style={{ borderLeft: "1px solid #EEEFF2" }}>
+        <div
+          ref={whoRef}
+          className="relative rounded-[15px] px-[18px] py-3.5 sm:border-l sm:border-[#EEEFF2]"
+        >
           <label className="text-xs font-semibold tracking-[.04em] text-[#9CA3AF] uppercase">Who?</label>
           <button
             type="button"
@@ -104,7 +108,7 @@ export function SearchCard({ destinations = [] }: { destinations?: string[] }) {
 
           {whoOpen && (
             <div
-              className="absolute top-[calc(100%+10px)] left-0 z-20 w-[280px] rounded-2xl border border-[#E7E8EC] bg-white p-5"
+              className="absolute top-[calc(100%+10px)] left-1/2 z-20 w-[min(280px,calc(100vw-2.5rem))] -translate-x-1/2 rounded-2xl border border-[#E7E8EC] bg-white p-5 sm:left-0 sm:translate-x-0"
               style={{ boxShadow: "0 12px 30px rgba(16,24,40,.14)" }}
             >
               <GuestStepper
@@ -146,10 +150,7 @@ export function SearchCard({ destinations = [] }: { destinations?: string[] }) {
           )}
         </div>
 
-        <div
-          className="rounded-[15px] px-[18px] py-3.5"
-          style={{ borderLeft: "1px solid #EEEFF2" }}
-        >
+        <div className="rounded-[15px] px-[18px] py-3.5 sm:border-l sm:border-[#EEEFF2]">
           <label className="text-xs font-semibold tracking-[.04em] text-[#9CA3AF] uppercase">
             Rooms
           </label>
@@ -169,7 +170,7 @@ export function SearchCard({ destinations = [] }: { destinations?: string[] }) {
         <button
           type="button"
           onClick={handleSearch}
-          className="btnp flex items-center justify-center gap-[9px] rounded-[15px] px-6 py-3.5 text-[15px] font-semibold text-white md:py-0"
+          className="btnp flex items-center justify-center gap-[9px] rounded-[15px] px-6 py-3.5 text-[15px] font-semibold text-white sm:col-span-2 md:col-span-1 md:py-0"
           style={{ background: "#7C8CF8", boxShadow: "0 6px 18px rgba(124,140,248,.3)" }}
         >
           <Search className="size-[18px]" />

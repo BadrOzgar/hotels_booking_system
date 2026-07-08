@@ -16,9 +16,10 @@ type Props = {
   checkIn: string;
   checkOut: string;
   onChange: (checkIn: string, checkOut: string) => void;
+  className?: string;
 };
 
-export function DateRangePicker({ checkIn, checkOut, onChange }: Props) {
+export function DateRangePicker({ checkIn, checkOut, onChange, className = "col-span-2" }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +67,7 @@ export function DateRangePicker({ checkIn, checkOut, onChange }: Props) {
   const cells = buildMonthGrid(viewDate.getFullYear(), viewDate.getMonth());
 
   return (
-    <div ref={rootRef} className="relative col-span-2 grid grid-cols-2">
+    <div ref={rootRef} className={`relative grid grid-cols-2 ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -96,7 +97,7 @@ export function DateRangePicker({ checkIn, checkOut, onChange }: Props) {
 
       {open && (
         <div
-          className="absolute top-[calc(100%+10px)] left-0 z-20 w-[320px] rounded-[20px] border border-[#E7E8EC] bg-white p-5"
+          className="absolute top-[calc(100%+10px)] left-1/2 z-20 w-[min(320px,calc(100vw-2.5rem))] -translate-x-1/2 rounded-[20px] border border-[#E7E8EC] bg-white p-5 sm:left-0 sm:translate-x-0"
           style={{ boxShadow: "0 16px 40px rgba(16,24,40,.14)" }}
         >
           <div className="flex items-center justify-between">

@@ -36,7 +36,7 @@ export default async function SuperAdminHotelDetailPage({ params }: { params: Pr
   ];
 
   return (
-    <div className="fu mx-auto max-w-[1000px] p-8">
+    <div className="fu mx-auto max-w-[1000px] p-4 sm:p-6 lg:p-8">
       <div className="flex items-center gap-2 text-[13.5px] font-medium text-[#9CA3AF]">
         <Link href="/super-admin/hotels" className="navlink">Hotels</Link>
         <ChevronRight className="size-[15px]" />

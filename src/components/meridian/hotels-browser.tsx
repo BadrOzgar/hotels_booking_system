@@ -66,11 +66,11 @@ function HotelCard({ hotel }: { hotel: HotelListing }) {
       style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
     >
       <HotelCardMedia images={hotel.images} gradient={hotel.gradient} tag={hotel.tag} />
-      <div className="flex flex-1 flex-col px-6 py-5">
+      <div className="flex flex-1 flex-col px-5 py-5 sm:px-6">
         <h3 className="m-0 text-lg font-bold tracking-[-.02em]">{hotel.name}</h3>
         <div className="mt-1.5 flex items-center gap-1.5 text-[13.5px] font-medium text-[#6B7280]">
-          <MapPin className="size-[15px] text-[#9CA3AF]" />
-          {hotel.city}, {hotel.country}
+          <MapPin className="size-[15px] shrink-0 text-[#9CA3AF]" />
+          <span className="truncate">{hotel.city}, {hotel.country}</span>
         </div>
         <div className="mt-2.5 flex items-center gap-1.5">
           <Star className="size-[15px] fill-[#F6D68A] text-[#F6D68A]" />
@@ -81,7 +81,7 @@ function HotelCard({ hotel }: { hotel: HotelListing }) {
         </div>
         <p className="mt-3.5 text-[14px] leading-[1.55] text-[#6B7280]">{hotel.description}</p>
 
-        <div className="mt-auto flex items-end justify-between pt-5">
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-5">
           <div>
             <span className="text-xl font-extrabold tracking-[-.02em]">{formatCurrency(hotel.priceFrom)}</span>
             <span className="text-[13px] font-medium text-[#9CA3AF]"> / night from</span>

@@ -56,10 +56,10 @@ export function BookingForm({
       <input type="hidden" name="adults" value={adults} />
       <input type="hidden" name="children" value={childCount} />
 
-      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 items-start gap-8 pb-24 lg:grid-cols-[1fr_380px] lg:pb-0">
         {/* FORM */}
         <div
-          className="rounded-[22px] border border-[#E7E8EC] bg-white p-[30px]"
+          className="rounded-[22px] border border-[#E7E8EC] bg-white p-5 sm:p-[30px]"
           style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
         >
           <h2 className="text-xl font-bold tracking-[-.02em]">Guest information</h2>
@@ -87,7 +87,7 @@ export function BookingForm({
 
         {/* SUMMARY */}
         <div
-          className="sticky top-[92px] rounded-[22px] border border-[#E7E8EC] bg-white p-6"
+          className="rounded-[22px] border border-[#E7E8EC] bg-white p-5 sm:p-6 lg:sticky lg:top-[92px]"
           style={{ boxShadow: "0 12px 30px rgba(16,24,40,.08)" }}
         >
           <div className="flex gap-3.5">
@@ -152,6 +152,25 @@ export function BookingForm({
             Secured &middot; Free cancellation
           </div>
         </div>
+      </div>
+
+      {/* MOBILE STICKY SUMMARY BAR */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-[#E7E8EC] bg-white/95 px-4 py-3 backdrop-blur lg:hidden"
+        style={{ boxShadow: "0 -4px 20px rgba(16,24,40,.08)" }}
+      >
+        <div>
+          <div className="text-[17px] font-extrabold tracking-[-.02em]">{formatCurrency(total)}</div>
+          <div className="text-[11.5px] font-medium text-[#9CA3AF]">{nights} night{nights === 1 ? "" : "s"} total</div>
+        </div>
+        <button
+          type="submit"
+          disabled={pending}
+          className="btnp rounded-[13px] px-6 py-3.5 text-[15px] font-bold text-white disabled:opacity-60"
+          style={{ background: "#7C8CF8", boxShadow: "0 4px 14px rgba(124,140,248,.28)" }}
+        >
+          {pending ? "Confirming…" : "Confirm booking"}
+        </button>
       </div>
     </form>
   );

@@ -36,17 +36,17 @@ export default async function HotelDetailPage({
   }));
 
   return (
-    <div className="fu mx-auto max-w-[1240px] px-8 pt-10 pb-20">
+    <div className="fu mx-auto max-w-[1240px] px-4 pt-8 pb-16 sm:px-6 sm:pt-10 lg:px-8 lg:pb-20">
       <div className="flex items-center gap-2 text-[13.5px] font-medium text-[#9CA3AF]">
         <Link href="/" className="navlink">Home</Link>
         <ChevronRight className="size-[15px]" />
         <Link href="/hotels" className="navlink">Hotels</Link>
         <ChevronRight className="size-[15px]" />
-        <span className="text-[#6B7280]">{hotel.name}</span>
+        <span className="truncate text-[#6B7280]">{hotel.name}</span>
       </div>
 
       <div
-        className="relative mt-5 h-[280px] rounded-[22px] bg-cover bg-center"
+        className="relative mt-5 h-[200px] rounded-2xl bg-cover bg-center sm:h-[240px] md:h-[280px] md:rounded-[22px]"
         style={{ ...coverStyle(hotel.images[0]?.url, hotel.gradient), boxShadow: "0 10px 30px rgba(16,24,40,.08)" }}
       >
         {hotel.tag && (
@@ -61,7 +61,7 @@ export default async function HotelDetailPage({
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="m-0 text-4xl font-extrabold tracking-[-.03em]">{hotel.name}</h1>
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">{hotel.name}</h1>
           <div className="mt-2.5 flex items-center gap-1.5 text-[15px] font-medium text-[#6B7280]">
             <MapPin className="size-4 text-[#9CA3AF]" />
             {hotel.city}, {hotel.country}

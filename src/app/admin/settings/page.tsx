@@ -12,7 +12,7 @@ export default async function AdminSettingsPage() {
   if (!hotel) throw new Error("Hotel not found.");
 
   return (
-    <div className="fu mx-auto max-w-[720px] p-8">
+    <div className="fu mx-auto max-w-[720px] p-4 sm:p-6 lg:p-8">
       <h1 className="m-0 text-[28px] font-extrabold tracking-[-.03em]">Settings</h1>
       <p className="mt-2 text-[14.5px] font-medium text-[#6B7280]">
         Manage your hotel, profile, and workspace preferences.

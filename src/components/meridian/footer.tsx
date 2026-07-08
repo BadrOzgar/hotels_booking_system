@@ -3,8 +3,8 @@ import Image from "next/image";
 
 export function Footer() {
   return (
-    <footer className="mt-24 border-t border-[#ECEDF1] bg-white">
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-8 pt-14 pb-10 sm:grid-cols-2 md:grid-cols-4">
+    <footer className="mt-16 border-t border-[#ECEDF1] bg-white sm:mt-20 md:mt-24">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-4 pt-12 pb-10 sm:grid-cols-2 sm:px-6 sm:pt-14 md:grid-cols-4 lg:px-8">
         <div>
           <div className="flex items-center gap-2.5">
             <Image src="/logo.png" alt="Meridian" width={32} height={32} className="rounded-[10px]" />
@@ -42,7 +42,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-[#F0F1F4]">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-8 py-[22px] text-[13px] font-medium text-[#9CA3AF]">
+        <div className="mx-auto flex max-w-[1240px] flex-col items-center justify-between gap-3 px-4 py-[22px] text-[13px] font-medium text-[#9CA3AF] sm:flex-row sm:px-6 lg:px-8">
           <span>&copy; {new Date().getFullYear()} Meridian Coastal Resort</span>
           <span className="flex gap-[22px]">
             <span className="navlink">Privacy</span>

@@ -22,7 +22,7 @@ export default async function AdminRoomsPage() {
   const available = rows.filter((r) => r.status === "AVAILABLE").length;
 
   return (
-    <div className="fu p-8">
+    <div className="fu p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="m-0 text-[28px] font-extrabold tracking-[-.03em]">Rooms</h1>

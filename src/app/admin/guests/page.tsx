@@ -12,7 +12,7 @@ export default async function AdminGuestsPage() {
   const totalBookings = guests.reduce((sum, g) => sum + g.stays, 0);
 
   return (
-    <div className="fu p-8">
+    <div className="fu p-4 sm:p-6 lg:p-8">
       <div>
         <h1 className="m-0 text-[28px] font-extrabold tracking-[-.03em]">Guests</h1>
         <p className="mt-2 text-[14.5px] font-medium text-[#6B7280]">

@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
   ];
 
   return (
-    <div className="fu p-8">
+    <div className="fu p-4 sm:p-6 lg:p-8">
       <DashboardToggle
         ownerName={session?.user?.name ?? "Hotel Owner"}
         stats={stats}

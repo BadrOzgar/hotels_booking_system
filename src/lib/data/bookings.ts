@@ -151,7 +151,11 @@ export async function createBooking(
 export async function getBookingByConfirmationCode(code: string) {
   return prisma.booking.findUnique({
     where: { confirmationCode: code },
-    include: { hotel: true, roomType: true, roomUnit: true },
+    include: {
+      hotel: true,
+      roomType: { include: { images: { where: { isCover: true }, take: 1 } } },
+      roomUnit: true,
+    },
   });
 }
 

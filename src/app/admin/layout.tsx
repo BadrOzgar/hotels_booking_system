@@ -5,6 +5,7 @@ import { listRecentActivity } from "@/lib/data/activity";
 import { formatActivityTitle, formatRelativeTime } from "@/lib/meridian-data";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminTopbar } from "@/components/admin/topbar";
+import { MobileSidebarProvider } from "@/components/admin/mobile-sidebar-context";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -24,19 +25,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ]);
 
   return (
-    <div className="flex min-h-screen" style={{ background: "#FAFAF8" }}>
-      <AdminSidebar pendingBookings={pendingBookings} ownerName={session.user.name ?? "Hotel Owner"} />
-      <div className="min-w-0 flex-1">
-        <AdminTopbar
-          ownerName={session.user.name ?? "Hotel Owner"}
-          ownerEmail={session.user.email ?? ""}
-          notifications={recentActivity.map((a) => ({
-            title: formatActivityTitle(a.action),
-            time: formatRelativeTime(a.createdAt),
-          }))}
-        />
-        {children}
+    <MobileSidebarProvider>
+      <div className="flex min-h-screen" style={{ background: "#FAFAF8" }}>
+        <AdminSidebar pendingBookings={pendingBookings} ownerName={session.user.name ?? "Hotel Owner"} />
+        <div className="min-w-0 flex-1">
+          <AdminTopbar
+            ownerName={session.user.name ?? "Hotel Owner"}
+            ownerEmail={session.user.email ?? ""}
+            notifications={recentActivity.map((a) => ({
+              title: formatActivityTitle(a.action),
+              time: formatRelativeTime(a.createdAt),
+            }))}
+          />
+          {children}
+        </div>
       </div>
-    </div>
+    </MobileSidebarProvider>
   );
 }

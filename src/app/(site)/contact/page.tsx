@@ -22,7 +22,7 @@ export default function ContactPage() {
             background: "radial-gradient(110% 90% at 15% 10%,rgba(255,255,255,.24),transparent 58%)",
           }}
         />
-        <div className="relative mx-auto max-w-[1240px] px-8 pt-16 pb-[72px]">
+        <div className="relative mx-auto max-w-[1240px] px-4 pt-12 pb-12 sm:px-6 sm:pt-16 sm:pb-16 md:px-8 md:pb-[72px]">
           <div
             className="flex w-fit items-center gap-2 rounded-full px-3.5 py-[7px]"
             style={{
@@ -37,22 +37,22 @@ export default function ContactPage() {
             </span>
           </div>
           <h1
-            className="mt-[22px] text-[52px] leading-[1.02] font-extrabold tracking-[-.035em] text-white"
+            className="mt-[22px] text-[clamp(1.8rem,6vw,3.25rem)] leading-[1.08] font-extrabold tracking-[-.035em] text-white sm:leading-[1.02]"
             style={{ textShadow: "0 2px 20px rgba(16,24,40,.2)" }}
           >
             Get in touch
           </h1>
-          <p className="mt-4 max-w-[520px] text-lg leading-[1.55] text-white/92">
+          <p className="mt-4 max-w-[520px] text-[15px] leading-[1.55] text-white/92 sm:text-lg">
             Questions about a stay, an event, or a special request? Our team by the
             sea is here to help — every day, from dawn to dusk.
           </p>
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-8 pt-14 pb-[90px] lg:grid-cols-[1fr_420px]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-4 pt-14 pb-16 sm:px-6 md:pb-[90px] lg:grid-cols-[1fr_420px] lg:px-8">
         {/* FORM */}
         <div
-          className="rounded-[22px] border border-[#E7E8EC] bg-white p-[34px]"
+          className="rounded-[22px] border border-[#E7E8EC] bg-white p-5 sm:p-[34px]"
           style={{ boxShadow: "0 1px 2px rgba(16,24,40,.04)" }}
         >
           <h2 className="text-[22px] font-bold tracking-[-.02em]">Send us a message</h2>
@@ -97,7 +97,7 @@ export default function ContactPage() {
             </div>
             <button
               type="button"
-              className="btnp flex items-center gap-[9px] rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white"
+              className="btnp flex w-full items-center justify-center gap-[9px] rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white sm:w-auto"
               style={{ background: "#7C8CF8", boxShadow: "0 6px 18px rgba(124,140,248,.3)" }}
             >
               Send message <ArrowRight className="size-[17px]" />

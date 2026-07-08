@@ -50,15 +50,15 @@ const PLANS: Plan[] = [
 
 export function PricingSection() {
   return (
-    <div className="pt-24">
+    <div className="pt-16 sm:pt-20 md:pt-24">
       <div className="text-center">
         <div className="text-[13px] font-bold tracking-[.08em] text-[#7C8CF8] uppercase">
           For hotel owners
         </div>
-        <h2 className="mt-3 text-4xl font-extrabold tracking-[-.03em]">
+        <h2 className="mt-3 text-[28px] font-extrabold tracking-[-.03em] sm:text-3xl md:text-4xl">
           Simple pricing, no surprises
         </h2>
-        <p className="mx-auto mt-3.5 max-w-[520px] text-[15.5px] leading-[1.6] text-[#6B7280]">
+        <p className="mx-auto mt-3.5 max-w-[520px] text-[15px] leading-[1.6] text-[#6B7280] sm:text-[15.5px]">
           List your property on Meridian and manage bookings, guests, and revenue from one
           dashboard. Start free, upgrade whenever you&apos;re ready.
         </p>
