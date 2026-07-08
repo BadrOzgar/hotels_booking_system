@@ -46,6 +46,16 @@ export const signupSchema = z.object({
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 
+export const requestPasswordResetSchema = z.object({
+  email: z.string().trim().email("Invalid email"),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().trim().email("Invalid email"),
+  code: z.string().trim().length(6, "Enter the 6-digit code"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 export const roomTypeSchema = z.object({
   name: z.string().trim().min(2, "Room title is required"),
   category: z.string().trim().min(1, "Room type is required"),

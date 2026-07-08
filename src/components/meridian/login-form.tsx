@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Eye, Check } from "lucide-react";
 import { authenticate } from "@/app/login/actions";
 
@@ -21,9 +22,9 @@ export function LoginForm() {
       <div className="mt-[18px]">
         <div className="flex items-center justify-between">
           <label className="text-[13px] font-semibold text-[#374151]">Password</label>
-          <span className="navlink text-[13px] font-semibold text-[#7C8CF8]">
+          <Link href="/forgot-password" className="navlink text-[13px] font-semibold text-[#7C8CF8]">
             Forgot password?
-          </span>
+          </Link>
         </div>
         <div className="relative mt-2">
           <input

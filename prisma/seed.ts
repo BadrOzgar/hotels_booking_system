@@ -9,7 +9,10 @@ const prisma = new PrismaClient({ adapter });
 const SUPER_ADMIN_EMAIL = "platform@meridian.co";
 const SUPER_ADMIN_PASSWORD = "platform12345";
 
-const OWNER_EMAIL = "admin@meridian.co";
+// Matches the Resend account's own address — Resend's sandbox mode (no verified domain yet)
+// only delivers emails to this address, so the seeded owner login uses it for testing the
+// forgot-password flow. Switch back to a normal email once a sending domain is verified.
+const OWNER_EMAIL = "samsung.izgr@gmail.com";
 const OWNER_PASSWORD = "admin12345";
 const OWNER_NAME = "Hotel Admin";
 
